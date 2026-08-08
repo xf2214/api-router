@@ -121,56 +121,36 @@
           <span class="prov-item-v2__url" :title="p.base_url">{{ p.base_url }}</span>
           <div class="prov-item-v2__meta">
             <span class="info-row">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
                 <circle cx="12" cy="12" r="6"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/>
               </svg>
               {{ $t('provider.models', { count: p.default_models.length }) }}
             </span>
             <span class="info-row">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
                 <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
               </svg>
               {{ $t('provider.qps', { limit: p.qps_limit || '∞' }) }}
             </span>
             <span class="info-row">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
               </svg>
-              {{ $t('provider.timeoutSec', '超时') }} {{ p.timeout_seconds || 60 }}s
+              {{ p.timeout_seconds || 60 }}s
             </span>
             <span class="info-row" :class="{ 'info-row--muted': !p.disable_proxy }">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
                 <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
               </svg>
-              {{ p.disable_proxy ? $t('provider.proxyDisabled', '直连') : $t('provider.proxySystem', '系统代理') }}
+              {{ p.disable_proxy ? $t('provider.proxyDisabledShort', '直连') : $t('provider.proxySystemShort', '代理') }}
             </span>
-            <span class="info-row info-row--muted">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <span v-if="healthMap[p.id]" class="info-row info-row--muted">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
                 <path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/>
               </svg>
-              {{ $t('provider.checkTime', { time: healthTime(p.id, healthMap) }) }}
+              {{ healthTime(p.id, healthMap) }}
             </span>
           </div>
-        </div>
-
-        <!-- 底部快速操作 -->
-        <div class="prov-item-v2__foot">
-          <button class="btn btn--ghost btn--sm" @click.stop="emit('edit-provider', p)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
-              <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-            </svg>
-            {{ $t('provider.edit') }}
-          </button>
-          <button class="btn btn--ghost btn--sm" @click.stop="emit('check-provider', p.id)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
-              <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>
-            </svg>
-            {{ $t('provider.check') }}
-          </button>
-          <div class="grow" />
-          <button class="btn btn--danger btn--sm" @click.stop="emit('delete-provider', p.id)">
-            {{ $t('provider.delete') }}
-          </button>
         </div>
       </div>
 

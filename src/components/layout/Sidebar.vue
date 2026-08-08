@@ -37,13 +37,18 @@
     </nav>
 
     <div class="sidebar__foot">
-      <div class="service-pill">
+      <button
+        type="button"
+        class="service-pill"
+        :title="serverStatus.running ? clickToManageText : clickToStartText"
+        @click="$emit('toggleService')"
+      >
         <span class="dot" :class="serverStatus.running ? 'dot--ok' : 'dot--err'" />
         <div class="service-pill__txt">
           <div class="service-pill__t">{{ serverStatus.running ? serviceRunningText : serviceStoppedText }}</div>
           <div class="service-pill__s">{{ serverStatus.running ? `127.0.0.1:${serverStatus.port}` : startServiceText }}</div>
         </div>
-      </div>
+      </button>
     </div>
   </aside>
 </template>
@@ -62,9 +67,12 @@ defineProps<{
   serviceRunningText: string;
   serviceStoppedText: string;
   startServiceText: string;
+  clickToManageText?: string;
+  clickToStartText?: string;
 }>();
 
 defineEmits<{
   (e: 'update:activeTab', v: string): void;
+  (e: 'toggleService'): void;
 }>();
 </script>
