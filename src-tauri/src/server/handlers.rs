@@ -120,6 +120,18 @@ pub(crate) fn upstream_status_from_error(err: &AppError) -> Option<u16> {
     }
 }
 
+fn apply_stream_options(body: &mut Value, is_stream: bool) {
+    if is_stream {
+        let include_false = body
+            .get("stream_options")
+            .map(|s| s.get("include_usage") == Some(&Value::Bool(false)))
+            .unwrap_or(false);
+        if !include_false {
+            body["stream_options"]["include_usage"] = Value::Bool(true);
+        }
+    }
+}
+
 async fn handle_completion(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -138,9 +150,7 @@ async fn handle_completion(
 
     let is_stream = resolve_stream(&body, endpoint, config.default_stream);
     body["stream"] = Value::Bool(is_stream);
-    if is_stream && body.get("stream_options").is_none() {
-        body["stream_options"] = json!({ "include_usage": true });
-    }
+    apply_stream_options(&mut body, is_stream);
 
     let mut trace = RouteTrace::new();
 
@@ -261,6 +271,7 @@ async fn handle_completion(
     Err(AppError::ModelNotFound(local_model))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn try_mapping(
     state: &AppState,
     config: &AppConfig,
@@ -439,9 +450,7 @@ mod tests {
         let mut body = json!({ "model": "gpt-4o" });
         let is_stream = resolve_stream(&body, "chat/completions", true);
         body["stream"] = Value::Bool(is_stream);
-        if is_stream && body.get("stream_options").is_none() {
-            body["stream_options"] = json!({ "include_usage": true });
-        }
+        apply_stream_options(&mut body, is_stream);
         assert_eq!(body["stream"], true);
         assert_eq!(body["stream_options"]["include_usage"], true);
     }
@@ -454,11 +463,18 @@ mod tests {
         });
         let is_stream = resolve_stream(&body, "chat/completions", true);
         body["stream"] = Value::Bool(is_stream);
-        if is_stream && body.get("stream_options").is_none() {
-            body["stream_options"] = json!({ "include_usage": true });
-        }
+        apply_stream_options(&mut body, is_stream);
         assert_eq!(body["stream"], true);
         assert_eq!(body["stream_options"]["include_usage"], false);
+    }
+
+    #[test]
+    fn fills_include_usage_for_empty_stream_options() {
+        let mut body = json!({ "model": "gpt-4o", "stream_options": {} });
+        let is_stream = resolve_stream(&body, "chat/completions", true);
+        body["stream"] = Value::Bool(is_stream);
+        apply_stream_options(&mut body, is_stream);
+        assert_eq!(body["stream_options"]["include_usage"], true);
     }
 
     #[test]
@@ -466,9 +482,7 @@ mod tests {
         let mut body = json!({ "model": "gpt-4o" });
         let is_stream = resolve_stream(&body, "chat/completions", false);
         body["stream"] = Value::Bool(is_stream);
-        if is_stream && body.get("stream_options").is_none() {
-            body["stream_options"] = json!({ "include_usage": true });
-        }
+        apply_stream_options(&mut body, is_stream);
         assert_eq!(body["stream"], false);
         assert!(body.get("stream_options").is_none());
     }

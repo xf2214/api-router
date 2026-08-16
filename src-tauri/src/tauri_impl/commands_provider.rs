@@ -117,7 +117,7 @@ async fn probe_provider(provider: &ProviderConfig) -> ProviderHealth {
     };
 
     let upstream_url = build_models_url(&provider.base_url);
-    let timeout = Duration::from_secs(provider.timeout_seconds.max(5).min(30));
+    let timeout = Duration::from_secs(provider.timeout_seconds.clamp(5, 30));
     let mut builder = reqwest::Client::builder().timeout(timeout);
     if provider.disable_proxy {
         builder = builder.no_proxy();
@@ -196,7 +196,7 @@ pub(crate) async fn test_target_chat_completion(
     };
 
     let upstream_url = build_upstream_url(&provider.base_url, "chat/completions");
-    let timeout = Duration::from_secs(provider.timeout_seconds.max(5).min(30));
+    let timeout = Duration::from_secs(provider.timeout_seconds.clamp(5, 30));
     let mut builder = reqwest::Client::builder().timeout(timeout);
     if provider.disable_proxy {
         builder = builder.no_proxy();
@@ -299,7 +299,7 @@ fn build_models_url(base_url: &str) -> String {
 
     let chat_suffix = "/chat/completions";
     if trimmed.len() >= chat_suffix.len()
-        && trimmed[trimmed.len() - chat_suffix.len()..].eq_ignore_ascii_case(&chat_suffix)
+        && trimmed[trimmed.len() - chat_suffix.len()..].eq_ignore_ascii_case(chat_suffix)
     {
         return format!("{}models", &trimmed[..trimmed.len() - chat_suffix.len()]);
     }
@@ -332,7 +332,7 @@ pub async fn fetch_provider_models(
 
     provider.base_url = normalize_base_url(&provider.base_url);
     let upstream_url = build_models_url(&provider.base_url);
-    let timeout = Duration::from_secs(provider.timeout_seconds.max(5).min(60));
+    let timeout = Duration::from_secs(provider.timeout_seconds.clamp(5, 60));
     info!("Fetching models from {}", upstream_url);
     let mut builder = reqwest::Client::builder().timeout(timeout);
     if provider.disable_proxy {
@@ -482,7 +482,7 @@ async fn test_target_with_key(
         "{}/chat/completions",
         provider.base_url.trim_end_matches('/')
     );
-    let timeout = Duration::from_secs(provider.timeout_seconds.max(5).min(30));
+    let timeout = Duration::from_secs(provider.timeout_seconds.clamp(5, 30));
     let client = reqwest::Client::builder()
         .timeout(timeout)
         .build()

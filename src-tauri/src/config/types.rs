@@ -197,20 +197,11 @@ impl Default for ProviderConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ModelInfo {
     pub context_length: Option<u64>,
     pub max_tokens: Option<u64>,
-}
-
-impl Default for ModelInfo {
-    fn default() -> Self {
-        Self {
-            context_length: None,
-            max_tokens: None,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -362,20 +353,15 @@ impl Default for ModelDefinition {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum RoutingStrategy {
+    #[default]
     Priority,
     Weighted,
     RoundRobin,
     LeastBusy,
     LatencyBased,
-}
-
-impl Default for RoutingStrategy {
-    fn default() -> Self {
-        RoutingStrategy::Priority
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -465,14 +451,9 @@ impl Default for CacheConfig {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum CacheMode {
+    #[default]
     Simple,
-}
-
-impl Default for CacheMode {
-    fn default() -> Self {
-        CacheMode::Simple
-    }
 }

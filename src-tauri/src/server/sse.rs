@@ -94,10 +94,8 @@ impl SseLineBuffer {
 
 /// 从一行 SSE 文本中提取 usage 字段。
 fn extract_usage_from_sse_line(line: &str) -> Option<TokenUsage> {
-    if !line.starts_with("data: ") {
-        return None;
-    }
-    let payload = &line[6..];
+    let payload = line.strip_prefix("data:")?;
+    let payload = payload.strip_prefix(' ').unwrap_or(payload);
     if payload.trim() == "[DONE]" {
         return None;
     }
@@ -173,5 +171,17 @@ mod tests {
         assert_eq!(usage.prompt_tokens, 5);
         assert_eq!(usage.completion_tokens, 3);
         assert_eq!(usage.total_tokens, 8);
+    }
+
+    #[test]
+    fn extracts_usage_without_space_prefix() {
+        let mut buf = SseLineBuffer::with_local_model("m".to_string());
+
+        let chunk = br#"data:{"usage":{"prompt_tokens":2,"completion_tokens":1,"total_tokens":3}}
+"#;
+        let _ = buf.push(chunk);
+
+        let usage = buf.take_usage().expect("usage should be extracted without space");
+        assert_eq!(usage.total_tokens, 3);
     }
 }

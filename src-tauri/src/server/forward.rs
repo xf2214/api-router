@@ -23,6 +23,7 @@ use crate::{
     transform::transform_response,
 };
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn forward_with_retry(
     state: &AppState,
     resolved: &ResolvedTarget<'_>,
@@ -103,6 +104,7 @@ fn is_retryable_app_error(err: &AppError, allowed_codes: &Option<Vec<u16>>) -> b
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn forward_request_once(
     state: &AppState,
     resolved: &ResolvedTarget<'_>,
@@ -195,6 +197,7 @@ pub(crate) async fn forward_request_once(
             local_model.to_string(),
         )));
         let errored = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let usage_recorded = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
 
         let metrics_handle = state.inner.metrics.clone();
         let provider_id = resolved.provider.id.to_string();
@@ -203,11 +206,31 @@ pub(crate) async fn forward_request_once(
 
         let buffer_for_map = buffer.clone();
         let errored_for_map = errored.clone();
+        let metrics_handle_for_map = metrics_handle.clone();
+        let runtime_for_tpm_for_map = runtime_for_tpm.clone();
+        let provider_id_for_map = provider_id.clone();
+        let upstream_model_for_map = upstream_model.clone();
+        let usage_recorded_map = usage_recorded.clone();
         let stream = upstream.bytes_stream().map(move |result| {
             let mut buf = buffer_for_map.lock().unwrap();
             match result {
                 Ok(bytes) => {
                     let out = buf.push(&bytes);
+                    if let Some(u) = buf.take_usage() {
+                        if usage_recorded_map
+                            .compare_exchange(false, true, std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed)
+                            .is_ok()
+                        {
+                            let metrics = metrics_handle_for_map.clone();
+                            let rt = runtime_for_tpm_for_map.clone();
+                            let pid = provider_id_for_map.clone();
+                            let um = upstream_model_for_map.clone();
+                            tokio::spawn(async move {
+                                metrics.add_usage(&pid, &um, u.clone()).await;
+                                rt.record_tokens(u.total_tokens).await;
+                            });
+                        }
+                    }
                     Ok::<_, std::io::Error>(axum::body::Bytes::from(out))
                 }
                 Err(e) => {
@@ -231,9 +254,14 @@ pub(crate) async fn forward_request_once(
                 metrics_handle.convert_to_failure(&provider_id, &upstream_model).await;
             }
             if let Some(u) = usage {
-                let total = u.total_tokens;
-                metrics_handle.add_usage(&provider_id, &upstream_model, u).await;
-                runtime_for_tpm.record_tokens(total).await;
+                if usage_recorded
+                    .compare_exchange(false, true, std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed)
+                    .is_ok()
+                {
+                    let total = u.total_tokens;
+                    metrics_handle.add_usage(&provider_id, &upstream_model, u).await;
+                    runtime_for_tpm.record_tokens(total).await;
+                }
             }
 
             Ok::<_, std::io::Error>(axum::body::Bytes::from(rest))

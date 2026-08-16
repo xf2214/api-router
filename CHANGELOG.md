@@ -33,6 +33,29 @@ Release status legend:  / 发布状态图例：
 
 ---
 
+## [0.1.1] - 2026-08-16
+
+> 🪟 **Windows x64 Only** · Patch Release  
+> 补丁版：修复 Token 统计不计数问题，并完成 Rust 代码质量整改。
+
+### Fixed / 修复
+
+- **修复 Token 统计监控不计数**：
+  - 流式请求的 token usage 改为「到包即记」— 上游 usage 包到达时立即记录，不再依赖客户端完整消费 SSE 流（此前 Claude Code / Cursor 等客户端中断连接会导致 usage 丢失，token 统计恒为 0）。
+  - 客户端传 `stream_options: {}` 时自动补 `include_usage: true`，确保上游返回 usage 可被统计。
+  - SSE 解析兼容 `data:`（无空格）前缀行；`"usage": null` 不再被误计为 0 token。
+- **代码质量整改**：`cargo clippy --lib` 14 个警告全部清零（clamp 改写、derive Default、sort_by_key、冗余闭包、needless borrow 等），行为保持不变。
+
+### Changed / 变更
+
+- 无。
+
+### Added / 新增
+
+- 新增 4 个针对 token 统计与 SSE 解析的单元测试（`cargo test --lib` 99 passed / 0 failed）。
+
+---
+
 ## [0.1.0] - 2026-08-07
 
 > 🪟 **Windows x64 Only** · Alpha Release · First public preview  
@@ -112,16 +135,17 @@ Release status legend:  / 发布状态图例：
 
 ---
 
-### 安装包下载 · Download Matrix (v0.1.0)
+### 安装包下载 · Download Matrix (v0.1.1)
 
 | Platform / 平台 | Arch / 架构 | Format / 格式 | Filename / 文件名 | SHA-256 |
 |:---------------:|:-----------:|:-------------:|:-----------------|:--------|
-| 🪟 **Windows 10/11** | x64 | **NSIS exe (推荐)** | `API Router_0.1.0_x64-setup.exe` | *(see GitHub Release)* |
-| 🪟 **Windows 10/11** | x64 | WiX MSI | `API Router_0.1.0_x64_en-US.msi` | *(see GitHub Release)* |
+| 🪟 **Windows 10/11** | x64 | **NSIS exe (推荐)** | `API Router_0.1.1_x64-setup.exe` | `BA980008D4D1872C89930706A5314E2477E1660ECFB739630A7F06E12E6C9C56` |
+| 🪟 **Windows 10/11** | x64 | WiX MSI | `API Router_0.1.1_x64_en-US.msi` | `E8F8BD016ED5C26439136AD7DBEE07FD21240DB65D17EFD11A08B744F159AA6E` |
 | 🍎 macOS 12+ | Universal 2 | DMG / .app | *(build from source)* | 🏃 M2 |
 | 🐧 Linux | x64 | deb / rpm / AppImage | *(not yet)* | 📝 M3 |
 
 ---
 
-[Unreleased]: https://github.com/api-router/api-router/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/api-router/api-router/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/api-router/api-router/releases/tag/v0.1.1
 [0.1.0]: https://github.com/api-router/api-router/releases/tag/v0.1.0

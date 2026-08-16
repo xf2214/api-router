@@ -169,7 +169,7 @@ impl MetricsCollector {
     pub async fn all_stats(&self) -> Vec<ProviderStat> {
         let guard = self.inner.read().await;
         let mut stats: Vec<ProviderStat> = guard.stats.values().cloned().collect();
-        stats.sort_by(|a, b| b.total_requests.cmp(&a.total_requests));
+        stats.sort_by_key(|b| std::cmp::Reverse(b.total_requests));
         stats
     }
 
@@ -207,7 +207,7 @@ fn stat_key(provider_id: &str, model: &str) -> String {
 
 /// 从响应 JSON 中提取 usage 字段。
 pub fn extract_usage(value: &serde_json::Value) -> Option<TokenUsage> {
-    let usage = value.get("usage")?;
+    let usage = value.get("usage").filter(|u| u.is_object())?;
     Some(TokenUsage {
         prompt_tokens: usage.get("prompt_tokens").and_then(|v| v.as_u64()).unwrap_or(0),
         completion_tokens: usage
@@ -310,6 +310,12 @@ mod tests {
     #[test]
     fn extract_usage_returns_none_when_missing() {
         let v: serde_json::Value = serde_json::from_str(r#"{"foo":"bar"}"#).unwrap();
+        assert!(extract_usage(&v).is_none());
+    }
+
+    #[test]
+    fn extract_usage_returns_none_for_null() {
+        let v: serde_json::Value = serde_json::from_str(r#"{"usage":null}"#).unwrap();
         assert!(extract_usage(&v).is_none());
     }
 

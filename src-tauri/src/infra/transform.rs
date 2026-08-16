@@ -125,19 +125,20 @@ pub fn transform_response(body: &mut Value, local_model: &str) {
 /// Rewrite model identifiers in a streaming SSE chunk if present.
 /// OpenAI streaming chunks are JSON objects prefixed with `data: `.
 pub fn transform_stream_chunk(chunk: &str, local_model: &str) -> String {
-    if !chunk.starts_with("data: ") {
+    let Some(rest) = chunk.strip_prefix("data:") else {
         return chunk.to_string();
-    }
-
-    let payload = &chunk[6..];
+    };
+    let had_space = rest.starts_with(' ');
+    let payload = rest.strip_prefix(' ').unwrap_or(rest);
     if payload.trim() == "[DONE]" {
         return chunk.to_string();
     }
 
+    let prefix = if had_space { "data: " } else { "data:" };
     match serde_json::from_str::<Value>(payload) {
         Ok(mut value) => {
             transform_response(&mut value, local_model);
-            format!("data: {}", serde_json::to_string(&value).unwrap_or_else(|_| payload.to_string()))
+            format!("{prefix}{}", serde_json::to_string(&value).unwrap_or_else(|_| payload.to_string()))
         }
         Err(_) => chunk.to_string(),
     }
@@ -320,5 +321,14 @@ mod tests {
             ]
         });
         assert!(!is_compact_request(&body));
+    }
+
+    #[test]
+    fn rewrites_model_without_space_prefix() {
+        let out = transform_stream_chunk(r#"data:{"model":"upstream"}"#, "local-glm");
+        assert!(out.starts_with("data:"), "got: {out}");
+        assert!(out.contains(r#""model":"local-glm""#), "got: {out}");
+        // 无空格输入应保持无空格输出前缀
+        assert!(!out.starts_with("data: "), "got: {out}");
     }
 }

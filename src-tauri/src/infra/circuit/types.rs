@@ -48,7 +48,7 @@ impl BreakerEntry {
     pub(crate) fn prune_window(&mut self) {
         let cutoff = Instant::now()
             .checked_sub(std::time::Duration::from_millis(self.window_ms))
-            .unwrap_or_else(|| Instant::now());
+            .unwrap_or_else(Instant::now);
         while let Some(&t) = self.failure_window.front() {
             if t < cutoff {
                 self.failure_window.pop_front();
