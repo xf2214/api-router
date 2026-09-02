@@ -9,4 +9,16 @@ export default defineConfig(async () => ({
     strictPort: true,
     watch: { ignored: ["**/src-tauri/**"] },
   },
+  build: {
+    target: "esnext",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vue: ["vue", "vue-i18n"],
+          tauri: ["@tauri-apps/api", "@tauri-apps/plugin-shell"],
+        },
+      },
+    },
+  },
+  envPrefix: ["VITE_", "TAURI_"],
 }));

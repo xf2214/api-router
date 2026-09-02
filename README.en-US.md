@@ -25,9 +25,9 @@
 
   <br/>
 
-  [![GitHub Stars](https://img.shields.io/github/stars/api-router/api-router?style=for-the-badge&logo=github&label=Stars&color=FFD166&labelColor=0b1020)](https://github.com/api-router/api-router/stargazers)
-  [![GitHub Release](https://img.shields.io/github/v/release/api-router/api-router?display_name=tag&style=for-the-badge&logo=semver&label=Release&color=a78bfa&labelColor=0b1020)](https://github.com/api-router/api-router/releases)
-  [![CI](https://img.shields.io/github/actions/workflow/status/api-router/api-router/ci.yml?branch=main&style=for-the-badge&logo=githubactions&label=CI&color=34d399&labelColor=0b1020)](.github/workflows/ci.yml)
+  [![GitHub Stars](https://img.shields.io/github/stars/xf2214/api-router?style=for-the-badge&logo=github&label=Stars&color=FFD166&labelColor=0b1020)](https://github.com/xf2214/api-router/stargazers)
+  [![GitHub Release](https://img.shields.io/github/v/release/xf2214/api-router?display_name=tag&style=for-the-badge&logo=semver&label=Release&color=a78bfa&labelColor=0b1020)](https://github.com/xf2214/api-router/releases)
+  [![CI](https://img.shields.io/github/actions/workflow/status/xf2214/api-router/ci.yml?branch=master&style=for-the-badge&logo=githubactions&label=CI&color=34d399&labelColor=0b1020)](.github/workflows/ci.yml)
   [![Platform](https://img.shields.io/badge/Platform-Win%20%7C%20macOS-f472b6?style=for-the-badge&logoColor=white&labelColor=0b1020)](#)
 
 </div>
@@ -213,7 +213,7 @@
 ### ② Clone & Dependencies
 
 ```bash
-git clone https://github.com/api-router/api-router.git
+git clone https://github.com/xf2214/api-router.git
 cd api-router
 npm install
 ```
@@ -252,15 +252,15 @@ curl http://127.0.0.1:6123/v1/chat/completions \
 
 <div align="center">
 
-  <img src="https://img.shields.io/badge/Version-v0.1.0--alpha-a78bfa?style=for-the-badge&logo=semver&labelColor=0b1020" alt="Current Version"/>
-  <img src="https://img.shields.io/badge/Status-Alpha-orange?style=for-the-badge&logoColor=white&labelColor=0b1020" alt="Status"/>
-  <img src="https://img.shields.io/badge/Platform-Windows%20x64%20ONLY-f472b6?style=for-the-badge&logo=windows11&logoColor=white&labelColor=0b1020" alt="Platform Windows Only"/>
+  <img src="https://img.shields.io/badge/Version-v0.2.0-a78bfa?style=for-the-badge&logo=semver&labelColor=0b1020" alt="Current Version"/>
+  <img src="https://img.shields.io/badge/Status-CI%20Auto%20Build-orange?style=for-the-badge&logoColor=white&labelColor=0b1020" alt="Status"/>
+  <img src="https://img.shields.io/badge/Platform-Windows%20x64%20%7C%20macOS-f472b6?style=for-the-badge&logoColor=white&labelColor=0b1020" alt="Platform"/>
 
 </div>
 
 <br/>
 
-> ⚠️ **Currently Windows-only release.** macOS builds are coming in the next iteration (targeted for M2 milestone, end of Week 5). Linux / mobile are not scheduled for the near term.
+> ✅ **Current stage: Windows + macOS installers are built and published automatically by GitHub Actions whenever a version tag is pushed.** Linux / mobile are not scheduled for the near term.
 
 ### 🪟 Supported Windows Versions
 
@@ -272,13 +272,13 @@ curl http://127.0.0.1:6123/v1/chat/completions \
 | **RAM** | ≥ 2 GB |
 | **Free disk space** | ≥ 200 MB (installer + local cache + logs) |
 
-### 📦 Release Artifacts (v0.1.0)
+### 📦 Release Artifacts (v0.2.0)
 
 | Installer format | Recommended for | Example filename | Size |
 |:-----------------|:----------------|:-----------------|:----:|
-| **NSIS `.exe`** ✅ | Most users: double-click wizard, supports uninstall | `API Router_0.1.0_x64-setup.exe` | ~25 MB |
-| **WiX `.msi`** | Enterprise deploy / SCCM / GPO silent install | `API Router_0.1.0_x64_en-US.msi` | ~28 MB |
-| **Portable `.zip`** *(optional)* | Extract-and-run green version (create manually) | `API Router_0.1.0_x64_portable.zip` | ~22 MB |
+| **NSIS `.exe`** ✅ | Windows most users: double-click wizard, supports uninstall | `API Router_0.2.0_x64-setup.exe` | ~25 MB |
+| **WiX `.msi`** | Windows enterprise deploy / SCCM / GPO silent install | `API Router_0.2.0_x64_en-US.msi` | ~28 MB |
+| **Universal DMG** 🍎 | macOS 12+ (Intel / Apple Silicon) | `API Router_0.2.0_aarch64.dmg` etc. | — |
 
 ### 🔗 Download Links
 
@@ -286,12 +286,12 @@ Grab the latest release from GitHub Releases:
 
 <div align="center">
   <samp>
-  <kbd><a href="https://github.com/api-router/api-router/releases/latest">
+  <kbd><a href="https://github.com/xf2214/api-router/releases/latest">
     <img src="https://img.shields.io/badge/Download-Latest_Release-22d3ee?style=for-the-badge&logo=github&logoColor=white&labelColor=0b1020" alt="Download Latest Release"/>
   </a></kbd>
   &nbsp;
-  <kbd><a href="https://github.com/api-router/api-router/releases/tag/v0.1.0">
-    <img src="https://img.shields.io/badge/Download-v0.1.0-FFD166?style=for-the-badge&logo=github&logoColor=white&labelColor=0b1020" alt="Download v0.1.0"/>
+  <kbd><a href="https://github.com/xf2214/api-router/releases/tag/v0.2.0">
+    <img src="https://img.shields.io/badge/Download-v0.2.0-FFD166?style=for-the-badge&logo=github&logoColor=white&labelColor=0b1020" alt="Download v0.2.0"/>
   </a></kbd>
   </samp>
   <p><em>Use a GitHub mirror (e.g. ghproxy / gh-proxy) if raw GitHub is slow in your region.</em></p>
@@ -318,12 +318,11 @@ Grab the latest release from GitHub Releases:
 
 ### 🍎 macOS & 🐧 Linux Roadmap
 
-| Platform | Status | Expected | Notes |
+| Platform | Status | Publishing | Notes |
 |----------|:------:|:--------:|-------|
-| 🪟 **Windows x64** | ✅ Released | Now | MSI + NSIS installers |
-| 🍎 macOS (Intel x64) | 🛠 In progress | M2 / End of Week 5 | DMG + .app, requires signing + notarize |
-| 🍎 macOS (Apple Silicon aarch64) | 🛠 In progress | M2 / End of Week 5 | Universal 2 binary |
-| 🐧 Linux (deb / rpm / AppImage) | 📝 Planned | Post-M3 | Native Tauri v2 support; packaging scripts TBD |
+| 🪟 **Windows x64** | ✅ Released | Manual / CI | MSI + NSIS installers |
+| 🍎 **macOS Universal 2** | ✅ CI build | Auto via version tag | DMG + .app, requires signing + notarize |
+| 🐧 Linux (deb / rpm / AppImage) | 📝 Planned | — | Native Tauri v2 support; packaging scripts TBD |
 | 📱 Android / iOS | ❌ Not planned | — | Desktop only for now |
 
 > Building macOS installers requires a macOS host (12+) and Xcode. See [docs/macos-build.md](docs/macos-build.md).
@@ -520,7 +519,7 @@ This project is open-sourced under the [MIT License](LICENSE).
   <samp>
   <a href="#top">⬆ Back to top</a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/api-router/api-router/issues/new/choose">🐛 Report a bug / 💡 Suggest a feature</a>
+  <a href="https://github.com/xf2214/api-router/issues/new/choose">🐛 Report a bug / 💡 Suggest a feature</a>
   </samp>
   <br/><br/>
   <sub>Made with 💙 using <code>Rust + Tauri + Vue 3</code> · Local-first. Your data stays yours.</sub>

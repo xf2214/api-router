@@ -25,9 +25,9 @@
 
   <br/>
 
-  [![GitHub Stars](https://img.shields.io/github/stars/api-router/api-router?style=for-the-badge&logo=github&label=Stars&color=FFD166&labelColor=0b1020)](https://github.com/api-router/api-router/stargazers)
-  [![GitHub Release](https://img.shields.io/github/v/release/api-router/api-router?display_name=tag&style=for-the-badge&logo=semver&label=Release&color=a78bfa&labelColor=0b1020)](https://github.com/api-router/api-router/releases)
-  [![CI](https://img.shields.io/github/actions/workflow/status/api-router/api-router/ci.yml?branch=main&style=for-the-badge&logo=githubactions&label=CI&color=34d399&labelColor=0b1020)](.github/workflows/ci.yml)
+  [![GitHub Stars](https://img.shields.io/github/stars/xf2214/api-router?style=for-the-badge&logo=github&label=Stars&color=FFD166&labelColor=0b1020)](https://github.com/xf2214/api-router/stargazers)
+  [![GitHub Release](https://img.shields.io/github/v/release/xf2214/api-router?display_name=tag&style=for-the-badge&logo=semver&label=Release&color=a78bfa&labelColor=0b1020)](https://github.com/xf2214/api-router/releases)
+  [![CI](https://img.shields.io/github/actions/workflow/status/xf2214/api-router/ci.yml?branch=master&style=for-the-badge&logo=githubactions&label=CI&color=34d399&labelColor=0b1020)](.github/workflows/ci.yml)
   [![Platform](https://img.shields.io/badge/Platform-Win%20%7C%20macOS-f472b6?style=for-the-badge&logoColor=white&labelColor=0b1020)](#)
 
 </div>
@@ -213,7 +213,7 @@
 ### ② 克隆 & 安装
 
 ```bash
-git clone https://github.com/api-router/api-router.git
+git clone https://github.com/xf2214/api-router.git
 cd api-router
 npm install
 ```
@@ -252,15 +252,15 @@ curl http://127.0.0.1:6123/v1/chat/completions \
 
 <div align="center">
 
-  <img src="https://img.shields.io/badge/Version-v0.1.0--alpha-a78bfa?style=for-the-badge&logo=semver&labelColor=0b1020" alt="Current Version"/>
-  <img src="https://img.shields.io/badge/Status-Alpha-orange?style=for-the-badge&logoColor=white&labelColor=0b1020" alt="Status"/>
-  <img src="https://img.shields.io/badge/Platform-Windows%20x64%20ONLY-f472b6?style=for-the-badge&logo=windows11&logoColor=white&labelColor=0b1020" alt="Platform Windows Only"/>
+  <img src="https://img.shields.io/badge/Version-v0.2.0-a78bfa?style=for-the-badge&logo=semver&labelColor=0b1020" alt="Current Version"/>
+  <img src="https://img.shields.io/badge/Status-CI%20Auto%20Build-orange?style=for-the-badge&logoColor=white&labelColor=0b1020" alt="Status"/>
+  <img src="https://img.shields.io/badge/Platform-Windows%20x64%20%7C%20macOS-f472b6?style=for-the-badge&logoColor=white&labelColor=0b1020" alt="Platform"/>
 
 </div>
 
 <br/>
 
-> ⚠️ **当前阶段：仅发布 Windows 版本**。macOS 版本将在后续迭代中提供（预计 M2 里程碑 第 5 周末）。Linux / 移动端暂无近期发布计划。
+> ✅ **当前阶段：Windows + macOS 均由 GitHub Actions 在推送版本标签后自动构建并发布**。Linux / 移动端暂无近期发布计划。
 
 ### 🪟 支持的 Windows 版本
 
@@ -272,13 +272,13 @@ curl http://127.0.0.1:6123/v1/chat/completions \
 | **最低内存** | 2 GB RAM |
 | **空闲磁盘** | ≥ 200 MB（含安装包 + 本地缓存 + 日志） |
 
-### 📦 发行产物（v0.1.0）
+### 📦 发行产物（v0.2.0）
 
 | 安装包格式 | 推荐场景 | 文件名（示例） | 体积 |
 |:-----------|:---------|:---------------|:----:|
-| **NSIS `.exe`** ✅ | 普通用户首选：双击向导式安装，支持卸载 | `API Router_0.1.0_x64-setup.exe` | ~25 MB |
-| **WiX `.msi`** | 企业部署 / SCCM / 组策略静默安装 | `API Router_0.1.0_x64_en-US.msi` | ~28 MB |
-| **Portable `.zip`** *(可选)* | 免安装绿色版，解压即用（需自行创建） | `API Router_0.1.0_x64_portable.zip` | ~22 MB |
+| **NSIS `.exe`** ✅ | Windows 普通用户首选：双击向导式安装，支持卸载 | `API Router_0.2.0_x64-setup.exe` | ~25 MB |
+| **WiX `.msi`** | Windows 企业部署 / SCCM / 组策略静默安装 | `API Router_0.2.0_x64_en-US.msi` | ~28 MB |
+| **Universal DMG** 🍎 | macOS 12+（Intel / Apple Silicon） | `API Router_0.2.0_aarch64.dmg` 等 | — |
 
 ### 🔗 下载地址
 
@@ -286,12 +286,12 @@ curl http://127.0.0.1:6123/v1/chat/completions \
 
 <div align="center">
   <samp>
-  <kbd><a href="https://github.com/api-router/api-router/releases/latest">
+  <kbd><a href="https://github.com/xf2214/api-router/releases/latest">
     <img src="https://img.shields.io/badge/Download-Latest_Release-22d3ee?style=for-the-badge&logo=github&logoColor=white&labelColor=0b1020" alt="Download Latest Release"/>
   </a></kbd>
   &nbsp;
-  <kbd><a href="https://github.com/api-router/api-router/releases/tag/v0.1.0">
-    <img src="https://img.shields.io/badge/Download-v0.1.0-FFD166?style=for-the-badge&logo=github&logoColor=white&labelColor=0b1020" alt="Download v0.1.0"/>
+  <kbd><a href="https://github.com/xf2214/api-router/releases/tag/v0.2.0">
+    <img src="https://img.shields.io/badge/Download-v0.2.0-FFD166?style=for-the-badge&logo=github&logoColor=white&labelColor=0b1020" alt="Download v0.2.0"/>
   </a></kbd>
   </samp>
   <p><em>若 GitHub 访问缓慢，可使用镜像加速站（如 ghproxy / gh-proxy）。</em></p>
@@ -318,13 +318,12 @@ curl http://127.0.0.1:6123/v1/chat/completions \
 
 ### 🍎 macOS & 🐧 Linux 进度（Coming Soon）
 
-| 平台 | 状态 | 预计可用 | 备注 |
+| 平台 | 状态 | 发布方式 | 备注 |
 |------|:----:|:--------:|------|
-| 🪟 **Windows x64** | ✅ 已发布 | 现在 | MSI + NSIS 两种安装器 |
-| 🍎 macOS (Intel x64) | 🛠 开发中 | M2 / 第 5 周末 | DMG + .app，需签名 + notarize |
-| 🍎 macOS (Apple Silicon aarch64) | 🛠 开发中 | M2 / 第 5 周末 | 通用二进制（Universal 2） |
-| 🐧 Linux (deb / rpm / AppImage) | 📝 规划中 | M3 之后 | Tauri v2 原生支持，打包脚本待补充 |
-| 📱 Android / iOS | ❌ 无计划 | — | 当前仅桌面端 |
+| 🪟 **Windows x64** | ✅ 已发布 | 手动 / CI | MSI + NSIS 两种安装器 |
+| 🍎 **macOS Universal 2** | ✅ CI 构建 | 版本标签自动发布 | DMG + .app，需签名 + notarize |
+| 🐧 **Linux (deb / rpm / AppImage)** | 📝 规划中 | — | Tauri v2 原生支持，打包脚本待补充 |
+| 📱 **Android / iOS** | ❌ 无计划 | — | 当前仅桌面端 |
 
 > 构建 macOS 安装包需要一台 macOS 主机（12+）及 Xcode，详见 [docs/macos-build.md](docs/macos-build.md)。
 
@@ -520,7 +519,7 @@ api-router/
   <samp>
   <a href="#top">⬆ 返回顶部</a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/api-router/api-router/issues/new/choose">🐛 报告 Bug / 💡 功能建议</a>
+  <a href="https://github.com/xf2214/api-router/issues/new/choose">🐛 报告 Bug / 💡 功能建议</a>
   </samp>
   <br/><br/>
   <sub>Made with 💙 using <code>Rust + Tauri + Vue 3</code> · 本地优先，数据不出户</sub>

@@ -9,7 +9,7 @@
           {{ strategyLabel(group.strategy) }}
         </span>
         <span class="badge" :class="group.fallback_enabled ? 'badge--ok' : 'badge--warn'" style="font-size: 11px; padding: 2px 10px;">
-          {{ group.fallback_enabled ? $t('routingTree.enabled', '开启') : $t('routingTree.disabled', '关闭') }}
+          {{ group.fallback_enabled ? $t('routingTree.enabled') : $t('routingTree.disabled') }}
         </span>
         <span class="badge badge--mute" style="font-size: 11px; padding: 2px 10px;">
           {{ $t('routing.modelCount', { count: models.length }) }}
@@ -19,7 +19,7 @@
       <button
         type="button"
         class="btn btn--ghost btn--icon btn--sm"
-        :title="$t('routing.collapse', '折叠')"
+        :title="$t('routing.collapse')"
         @click="collapsed = !collapsed"
       >
         <svg
@@ -40,7 +40,7 @@
         <button
           type="button"
           class="menu-btn menu-btn--sm"
-          :title="$t('routing.moreActions', '更多')"
+          :title="$t('routing.moreActions')"
           @click.stop="openMenu = !openMenu"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
@@ -54,14 +54,14 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
               <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
             </svg>
-            {{ $t('routingTree.edit', '编辑') }}
+            {{ $t('routingTree.edit') }}
           </button>
           <div class="menu-divider" />
           <button type="button" class="menu-item menu-item--danger" @click="onDeleteGroup">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
               <path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
             </svg>
-            {{ $t('app.delete', '删除') }}
+            {{ $t('app.delete') }}
           </button>
         </div>
       </div>
@@ -76,10 +76,10 @@
           </svg>
         </div>
         <div class="empty__title" style="font-size: 14px;">
-          {{ $t('routingTree.emptyGroup', '该分组暂无成员模型') }}
+          {{ $t('routingTree.emptyGroup') }}
         </div>
         <div class="empty__desc" style="font-size: 12px; color: var(--text-3);">
-          {{ $t('routing.emptyGroupDesc', '在「模型映射」页面把模型分配到本分组，或编辑分组勾选成员。') }}
+          {{ $t('routing.emptyGroupDesc') }}
         </div>
       </div>
 

@@ -1,26 +1,26 @@
-import { invoke } from '@tauri-apps/api/core';
 import type { ModelGroup, ModelDefinition } from '../../types';
+import { invokeTyped, COMMANDS } from './client';
 
 export async function getGroups(): Promise<ModelGroup[]> {
-  return invoke<ModelGroup[]>('get_groups');
+  return invokeTyped<ModelGroup[]>(COMMANDS.models.getGroups);
 }
 
 export async function saveGroup(group: ModelGroup): Promise<void> {
-  return invoke('save_group', { group });
+  return invokeTyped<void>(COMMANDS.models.saveGroup, { group } as Record<string, unknown>);
 }
 
 export async function deleteGroup(name: string): Promise<void> {
-  return invoke('delete_group', { name });
+  return invokeTyped<void>(COMMANDS.models.deleteGroup, { name } as Record<string, unknown>);
 }
 
 export async function getModelDefinitions(): Promise<ModelDefinition[]> {
-  return invoke<ModelDefinition[]>('get_model_definitions');
+  return invokeTyped<ModelDefinition[]>(COMMANDS.models.getModelDefinitions);
 }
 
 export async function saveModelDefinition(def: ModelDefinition): Promise<void> {
-  return invoke('save_model_definition', { def });
+  return invokeTyped<void>(COMMANDS.models.saveModelDefinition, { def } as Record<string, unknown>);
 }
 
 export async function deleteModelDefinition(id: string): Promise<void> {
-  return invoke('delete_model_definition', { id });
+  return invokeTyped<void>(COMMANDS.models.deleteModelDefinition, { id } as Record<string, unknown>);
 }

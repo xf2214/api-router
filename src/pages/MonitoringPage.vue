@@ -82,21 +82,21 @@
           <line class="gridline" x1="48" y1="90" x2="780" y2="90"/>
           <line class="gridline" x1="48" y1="150" x2="780" y2="150"/>
           <line class="gridline" x1="48" y1="210" x2="780" y2="210"/>
-          <text class="axis-y" x="40" y="34" text-anchor="end">{{ Math.max(1, overallStats.total) }}</text>
-          <text class="axis-y" x="40" y="94" text-anchor="end">{{ Math.round(Math.max(1, overallStats.total) * 0.75) }}</text>
-          <text class="axis-y" x="40" y="154" text-anchor="end">{{ Math.round(Math.max(1, overallStats.total) * 0.5) }}</text>
-          <text class="axis-y" x="40" y="214" text-anchor="end">{{ Math.round(Math.max(1, overallStats.total) * 0.25) }}</text>
+          <text class="axis-y" x="40" y="34" text-anchor="end">{{ maxBucketCount }}</text>
+          <text class="axis-y" x="40" y="94" text-anchor="end">{{ Math.round(maxBucketCount * 0.75) }}</text>
+          <text class="axis-y" x="40" y="154" text-anchor="end">{{ Math.round(maxBucketCount * 0.5) }}</text>
+          <text class="axis-y" x="40" y="214" text-anchor="end">{{ Math.round(maxBucketCount * 0.25) }}</text>
           <text class="axis-y" x="40" y="244" text-anchor="end">0</text>
           <path fill="url(#monArea)" :d="trendAreaPath" />
           <path fill="none" stroke="var(--c2)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" :d="trendLinePath" />
-          <text class="axis-x" x="48" y="262" text-anchor="middle">周一</text>
-          <text class="axis-x" x="150" y="262" text-anchor="middle">周二</text>
-          <text class="axis-x" x="252" y="262" text-anchor="middle">周三</text>
-          <text class="axis-x" x="354" y="262" text-anchor="middle">周四</text>
-          <text class="axis-x" x="456" y="262" text-anchor="middle">周五</text>
-          <text class="axis-x" x="558" y="262" text-anchor="middle">周六</text>
-          <text class="axis-x" x="660" y="262" text-anchor="middle">周日</text>
-          <text class="axis-x" x="780" y="262" text-anchor="middle">今日</text>
+          <text
+            v-for="(b, i) in trendBuckets"
+            :key="i"
+            class="axis-x"
+            :x="trendPoints[i] ? trendPoints[i].x : 48"
+            y="262"
+            text-anchor="middle"
+          >{{ b.label }}</text>
         </svg>
       </div>
     </div>
@@ -566,16 +566,42 @@ const tokenDonutSlices = computed(() => {
   });
 });
 
-const trendPoints = computed(() => {
-  const days = 8;
-  const total = Math.max(1, overallStats.value.total);
-  const pts: { x: number; y: number }[] = [];
-  for (let i = 0; i < days; i++) {
-    const x = 48 + (i / (days - 1)) * (780 - 48);
-    const y = 240 - (props.providerStats.length ? (props.providerStats[i % props.providerStats.length]?.total_requests ?? 0) / total : 0) * 210;
-    pts.push({ x, y });
+// 真实趋势：按自然日（本地时区）统计最近 8 天的请求数。
+// 数据来源为请求日志（后端环形缓冲，最近 500 条），不再伪造曲线；
+// 无日志的日子显示 0。趋势描述文案中的 range 由 monitorRangeLabel 提供。
+const TREND_DAYS = 8;
+
+const trendBuckets = computed(() => {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const firstDayStart = todayStart - (TREND_DAYS - 1) * 86400000;
+  const buckets: { label: string; count: number }[] = [];
+  for (let i = 0; i < TREND_DAYS; i++) {
+    const d = new Date(firstDayStart + i * 86400000);
+    buckets.push({ label: `${d.getMonth() + 1}/${d.getDate()}`, count: 0 });
   }
-  return pts;
+  for (const log of props.requestLogs) {
+    const d = new Date(log.started_at_ms);
+    const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const idx = Math.round((dayStart - firstDayStart) / 86400000);
+    if (idx >= 0 && idx < TREND_DAYS) {
+      buckets[idx].count++;
+    }
+  }
+  return buckets;
+});
+
+const maxBucketCount = computed(() =>
+  Math.max(1, ...trendBuckets.value.map((b) => b.count))
+);
+
+const trendPoints = computed(() => {
+  const days = trendBuckets.value;
+  const maxC = maxBucketCount.value;
+  return days.map((b, i) => ({
+    x: 48 + (i / Math.max(1, days.length - 1)) * (780 - 48),
+    y: 240 - (b.count / maxC) * 210,
+  }));
 });
 
 const trendLinePath = computed(() => {

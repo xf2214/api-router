@@ -113,11 +113,14 @@ impl MetricsCollector {
 
         // 更新统计（始终）
         let key = stat_key(&log.provider_id, &log.upstream_model);
-        let stat = guard.stats.entry(key.clone()).or_insert_with(|| ProviderStat {
-            provider_id: log.provider_id.clone(),
-            upstream_model: log.upstream_model.clone(),
-            ..Default::default()
-        });
+        let stat = guard
+            .stats
+            .entry(key.clone())
+            .or_insert_with(|| ProviderStat {
+                provider_id: log.provider_id.clone(),
+                upstream_model: log.upstream_model.clone(),
+                ..Default::default()
+            });
         stat.total_requests += 1;
         if log.success {
             stat.success_count += 1;
@@ -149,13 +152,7 @@ impl MetricsCollector {
             return Vec::new();
         }
         let limit = limit.min(guard.logs.len());
-        guard
-            .logs
-            .iter()
-            .rev()
-            .take(limit)
-            .cloned()
-            .collect()
+        guard.logs.iter().rev().take(limit).cloned().collect()
     }
 
     /// 清空所有日志与统计。
@@ -209,12 +206,18 @@ fn stat_key(provider_id: &str, model: &str) -> String {
 pub fn extract_usage(value: &serde_json::Value) -> Option<TokenUsage> {
     let usage = value.get("usage").filter(|u| u.is_object())?;
     Some(TokenUsage {
-        prompt_tokens: usage.get("prompt_tokens").and_then(|v| v.as_u64()).unwrap_or(0),
+        prompt_tokens: usage
+            .get("prompt_tokens")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0),
         completion_tokens: usage
             .get("completion_tokens")
             .and_then(|v| v.as_u64())
             .unwrap_or(0),
-        total_tokens: usage.get("total_tokens").and_then(|v| v.as_u64()).unwrap_or(0),
+        total_tokens: usage
+            .get("total_tokens")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0),
     })
 }
 
@@ -226,7 +229,7 @@ pub fn elapsed_ms(start: std::time::Instant) -> u64 {
 /// 生成简短请求 ID（8 字符 hex）。
 pub fn new_request_id() -> String {
     use rand::Rng;
-    let bytes: [u8; 4] = rand::thread_rng().gen();
+    let bytes: [u8; 4] = rand::rng().random();
     hex_encode(&bytes)
 }
 
@@ -254,7 +257,11 @@ mod tests {
             duration_ms: 200,
             status: Some(if success { 200 } else { 500 }),
             success,
-            error: if success { None } else { Some("upstream".to_string()) },
+            error: if success {
+                None
+            } else {
+                Some("upstream".to_string())
+            },
             retries: 0,
             fell_back: false,
             usage: Some(TokenUsage {
@@ -300,7 +307,10 @@ mod tests {
 
     #[test]
     fn extract_usage_parses_object() {
-        let v: serde_json::Value = serde_json::from_str(r#"{"usage":{"prompt_tokens":5,"completion_tokens":3,"total_tokens":8}}"#).unwrap();
+        let v: serde_json::Value = serde_json::from_str(
+            r#"{"usage":{"prompt_tokens":5,"completion_tokens":3,"total_tokens":8}}"#,
+        )
+        .unwrap();
         let u = extract_usage(&v).unwrap();
         assert_eq!(u.prompt_tokens, 5);
         assert_eq!(u.completion_tokens, 3);
@@ -411,7 +421,10 @@ mod tests {
         assert_eq!(gpt4_stat.total_requests, 1);
         assert_eq!(gpt4_stat.total_tokens, 15);
 
-        let mini_stat = stats.iter().find(|s| s.upstream_model == "gpt-4o-mini").unwrap();
+        let mini_stat = stats
+            .iter()
+            .find(|s| s.upstream_model == "gpt-4o-mini")
+            .unwrap();
         assert_eq!(mini_stat.total_requests, 1);
         assert_eq!(mini_stat.total_tokens, 3);
     }
@@ -427,15 +440,20 @@ mod tests {
         assert_eq!(stats[0].total_tokens, 15);
 
         // add_usage 不递增请求计数，只加 token
-        m.add_usage("p1", "gpt-4o", TokenUsage {
-            prompt_tokens: 5,
-            completion_tokens: 3,
-            total_tokens: 8,
-        }).await;
+        m.add_usage(
+            "p1",
+            "gpt-4o",
+            TokenUsage {
+                prompt_tokens: 5,
+                completion_tokens: 3,
+                total_tokens: 8,
+            },
+        )
+        .await;
 
         let stats = m.all_stats().await;
         assert_eq!(stats[0].total_requests, 1); // 仍然是 1
-        assert_eq!(stats[0].total_tokens, 23);  // 15 + 8 = 23
+        assert_eq!(stats[0].total_tokens, 23); // 15 + 8 = 23
         assert_eq!(stats[0].total_prompt_tokens, 15); // 10 + 5
         assert_eq!(stats[0].total_completion_tokens, 8); // 5 + 3
     }

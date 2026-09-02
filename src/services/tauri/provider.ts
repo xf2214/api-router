@@ -1,20 +1,20 @@
-import { invoke } from '@tauri-apps/api/core';
 import type { ProviderHealth, ModelTestTargetResult, ProviderConfig } from '../../types';
+import { invokeTyped, COMMANDS } from './client';
 
 export async function deleteProvider(providerId: string): Promise<void> {
-  return invoke('delete_provider', { providerId });
+  return invokeTyped<void>(COMMANDS.provider.deleteProvider, { providerId } as Record<string, unknown>);
 }
 
 export async function checkProviderHealth(providerId: string): Promise<ProviderHealth> {
-  return invoke<ProviderHealth>('check_provider_health', { providerId });
+  return invokeTyped<ProviderHealth>(COMMANDS.provider.checkProviderHealth, { providerId } as Record<string, unknown>);
 }
 
 export async function checkAllProvidersHealth(): Promise<ProviderHealth[]> {
-  return invoke<ProviderHealth[]>('check_all_providers_health');
+  return invokeTyped<ProviderHealth[]>(COMMANDS.provider.checkAllProvidersHealth);
 }
 
 export async function getHealthStatus(): Promise<ProviderHealth[]> {
-  return invoke<ProviderHealth[]>('get_health_status');
+  return invokeTyped<ProviderHealth[]>(COMMANDS.provider.getHealthStatus);
 }
 
 export interface ProviderModelsResult {
@@ -24,7 +24,7 @@ export interface ProviderModelsResult {
 }
 
 export async function fetchProviderModels(provider: ProviderConfig, apiKey: string): Promise<ProviderModelsResult> {
-  return invoke<ProviderModelsResult>('fetch_provider_models', { provider, apiKey });
+  return invokeTyped<ProviderModelsResult>(COMMANDS.provider.fetchProviderModels, { provider, apiKey } as Record<string, unknown>);
 }
 
 export async function testProviderTarget(
@@ -32,5 +32,5 @@ export async function testProviderTarget(
   apiKey: string,
   modelName: string,
 ): Promise<ModelTestTargetResult> {
-  return invoke<ModelTestTargetResult>('test_provider_target', { provider, apiKey, modelName });
+  return invokeTyped<ModelTestTargetResult>(COMMANDS.provider.testProviderTarget, { provider, apiKey, modelName } as Record<string, unknown>);
 }

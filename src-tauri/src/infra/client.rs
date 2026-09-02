@@ -75,7 +75,7 @@ impl TpmState {
 impl ProviderRuntime {
     /// 构建一个提供商运行时。`config.qps_limit` / `concurrency_limit` 为 0 表示不限制。
     pub fn new(config: &ProviderConfig) -> Result<Self, AppError> {
-        let timeout = Duration::from_secs(config.timeout_seconds.max(5));
+        let timeout = provider_timeout(config);
         let connect_timeout = Duration::from_secs(10);
 
         let mut builder = Client::builder()
@@ -125,49 +125,66 @@ impl ProviderRuntime {
     /// 申请一次请求许可（并发槽 + QPS 间隔 + TPM 窗口检查）。返回的守卫释放时归还并发槽。
     pub async fn acquire(&self) -> Result<PermitGuard, AppError> {
         let _sem_guard = if let Some(sem) = &self.concurrency {
-            Some(sem.clone().acquire_owned().await.map_err(|e| {
-                AppError::Config(format!("并发信号量异常: {e}"))
-            })?)
+            Some(
+                sem.clone()
+                    .acquire_owned()
+                    .await
+                    .map_err(|e| AppError::Config(format!("并发信号量异常: {e}")))?,
+            )
         } else {
             None
         };
 
         if let Some(state_arc) = &self.qps_state {
-            let mut state = state_arc.lock().await;
-            let now = now_ms();
-            if state.last_release_ms > 0 {
-                let elapsed = now.saturating_sub(state.last_release_ms);
-                if elapsed < state.min_interval_ms {
-                    let wait = state.min_interval_ms - elapsed;
-                    debug!(
-                        "QPS limit: provider={} sleeping {}ms",
-                        self.provider_id, wait
-                    );
-                    tokio::time::sleep(Duration::from_millis(wait)).await;
+            // 在锁内计算等待时长，锁外执行 sleep —— 避免 MutexGuard 跨 await 持有，
+            // 否则同提供商的所有并发请求会被串行化。
+            let wait_ms = {
+                let state = state_arc.lock().await;
+                let now = now_ms();
+                if state.last_release_ms > 0 {
+                    state.min_interval_ms.saturating_sub(now.saturating_sub(state.last_release_ms))
+                } else {
+                    0
                 }
+            };
+            if wait_ms > 0 {
+                debug!(
+                    "QPS limit: provider={} sleeping {}ms",
+                    self.provider_id, wait_ms
+                );
+                tokio::time::sleep(Duration::from_millis(wait_ms)).await;
             }
+            let mut state = state_arc.lock().await;
             state.last_release_ms = now_ms();
         }
 
-        // TPM 滑动窗口检查：若当前窗口内 token 总量已达上限，等待最早记录过期
+        // TPM 滑动窗口限流检查：若窗口内 token 总量已达上限，等待最早记录过期。
+        // 同样遵循"锁内计算、锁外 sleep"原则。
         if let Some(state_arc) = &self.tpm_state {
-            let mut state = state_arc.lock().await;
-            let current = state.prune_and_sum();
-            if current >= state.limit {
-                // 计算需要等待的时间：最早记录过期的时间
-                if let Some(&(oldest_ts, _)) = state.window.front() {
-                    let now = now_ms();
-                    let wait = oldest_ts + state.window_ms.saturating_sub(now);
-                    if wait > 0 {
-                        debug!(
-                            "TPM limit: provider={} current={} limit={} waiting {}ms",
-                            self.provider_id, current, state.limit, wait
-                        );
-                        tokio::time::sleep(Duration::from_millis(wait)).await;
-                        // 等待后重新清理
-                        state.prune_and_sum();
-                    }
+            let wait_ms = {
+                let mut state = state_arc.lock().await;
+                let current = state.prune_and_sum();
+                if current >= state.limit {
+                    state
+                        .window
+                        .front()
+                        .map(|&(oldest_ts, _)| {
+                            (oldest_ts + state.window_ms).saturating_sub(now_ms())
+                        })
+                        .unwrap_or(0)
+                } else {
+                    0
                 }
+            };
+            if wait_ms > 0 {
+                debug!(
+                    "TPM limit: provider={} waiting {}ms",
+                    self.provider_id, wait_ms
+                );
+                tokio::time::sleep(Duration::from_millis(wait_ms)).await;
+                // 等待后重新清理窗口
+                let mut state = state_arc.lock().await;
+                state.prune_and_sum();
             }
         }
 
@@ -243,10 +260,15 @@ impl ClientRegistry {
 
 /// 判断 HTTP 状态码是否可重试。
 pub fn is_retryable_status(status: StatusCode) -> bool {
-    matches!(
-        status.as_u16(),
-        408 | 425 | 429 | 500 | 502 | 503 | 504
-    )
+    matches!(status.as_u16(), 408 | 425 | 429 | 500 | 502 | 503 | 504)
+}
+
+/// 统一的超时策略：provider 配置的超时秒数，钳制在 [5, 120] 秒。
+///
+/// 转发、健康检查、模型探活等所有出站请求共用这一策略，
+/// 避免各处 `max(5)` / `clamp(5,30)` / `clamp(5,60)` 不一致。
+pub fn provider_timeout(provider: &ProviderConfig) -> Duration {
+    Duration::from_secs(provider.timeout_seconds.clamp(5, 120))
 }
 
 /// 判断请求错误是否可重试（连接 / 超时类）。
@@ -296,7 +318,7 @@ mod tests {
         // 退避应该单调非递减（抖动可能让 d3 略小于 d0，但应大致增长）
         assert!(d3.as_millis() >= d0.as_millis() / 4);
         // 封顶
-        assert!(d10.as_millis() <= max.as_millis() as u128 + 1);
+        assert!(d10.as_millis() <= max.as_millis() + 1);
     }
 
     #[test]

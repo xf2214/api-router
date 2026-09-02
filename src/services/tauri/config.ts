@@ -1,14 +1,14 @@
-import { invoke } from '@tauri-apps/api/core';
 import type { AppConfig } from '../../types';
+import { invokeTyped, COMMANDS } from './client';
 
 export async function getConfig(): Promise<AppConfig> {
-  return invoke<AppConfig>('get_config');
+  return invokeTyped<AppConfig>(COMMANDS.config.getConfig);
 }
 
 export async function exportConfig(): Promise<string> {
-  return invoke<string>('export_config');
+  return invokeTyped<string>(COMMANDS.config.exportConfig, { includeKeys: true });
 }
 
 export async function saveConfig(config: AppConfig, keys: Record<string, string>): Promise<void> {
-  return invoke('save_config', { config, keys });
+  return invokeTyped<void>(COMMANDS.config.saveConfig, { config, keys } as Record<string, unknown>);
 }

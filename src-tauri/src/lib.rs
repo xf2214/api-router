@@ -1,14 +1,14 @@
 use std::time::Duration;
 
-use tracing::info;
 use tauri::Manager;
+use tracing::info;
 
 #[cfg(target_os = "macos")]
 use tauri::menu::{Menu, PredefinedMenuItem, Submenu};
 
 pub mod core;
-pub mod server;
 pub mod infra;
+pub mod server;
 pub mod tauri_impl;
 
 mod config;
@@ -55,6 +55,8 @@ pub mod commands {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    init_tracing();
+
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
@@ -112,10 +114,14 @@ pub fn run() {
                 loop {
                     let (enabled, interval) = {
                         let config = state.inner.config.read().await;
-                        (config.enable_auto_health_check, config.health_check_interval_seconds)
+                        (
+                            config.enable_auto_health_check,
+                            config.health_check_interval_seconds,
+                        )
                     };
                     if enabled {
-                        tauri_impl::commands_provider::check_all_providers_health_internal(&state).await;
+                        tauri_impl::commands_provider::check_all_providers_health_internal(&state)
+                            .await;
                     }
                     tokio::time::sleep(Duration::from_secs(interval.max(60))).await;
                 }
@@ -129,6 +135,20 @@ pub fn run() {
     builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+/// 初始化全局日志订阅者。
+///
+/// 优先尊重 `RUST_LOG` 环境变量；未设置时回退到 `info` 级别。
+/// `try_init` 保证幂等，重复调用不会 panic。
+fn init_tracing() {
+    use tracing_subscriber::EnvFilter;
+
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_target(false)
+        .try_init();
 }
 
 #[cfg(target_os = "macos")]

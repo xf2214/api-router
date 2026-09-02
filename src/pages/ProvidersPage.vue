@@ -52,7 +52,7 @@
         <div class="prov-item-v2__head">
           <span class="pmark pmark--sm" :style="{ background: providerColor(p.id) }">{{ providerGlyph(p.id, config.providers) }}</span>
           <span class="prov-item-v2__name">{{ p.name }}</span>
-          <span v-if="!p.enabled" class="prov-item-v2__disabled-tag">{{ $t('provider.disabledBadge', '已禁用') }}</span>
+          <span v-if="!p.enabled" class="prov-item-v2__disabled-tag">{{ $t('provider.disabledBadge') }}</span>
           <span class="health" :class="'health--' + healthClass(p.id, healthMap)">
             <span class="health-dot" :class="'health-dot--' + healthClass(p.id, healthMap)" />
             {{ healthText(p.id, healthMap) }}
@@ -84,7 +84,7 @@
             <button
               type="button"
               class="menu-btn"
-              :title="$t('app.more', '更多')"
+              :title="$t('app.more')"
               @click.stop="toggleMenu(p.id)"
             >
               <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
@@ -142,7 +142,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
                 <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
               </svg>
-              {{ p.disable_proxy ? $t('provider.proxyDisabledShort', '直连') : $t('provider.proxySystemShort', '代理') }}
+              {{ p.disable_proxy ? $t('provider.proxyDisabledShort') : $t('provider.proxySystemShort') }}
             </span>
             <span v-if="healthMap[p.id]" class="info-row info-row--muted">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
@@ -161,11 +161,11 @@
           </svg>
         </div>
         <div class="empty__title">
-          {{ config.providers.length === 0 ? $t('provider.noProvidersYet', '还没有供应商') : $t('provider.noMatch') }}
+          {{ config.providers.length === 0 ? $t('provider.noProvidersYet') : $t('provider.noMatch') }}
         </div>
         <div class="empty__desc">
           {{ config.providers.length === 0
-            ? $t('provider.noProvidersHint', '添加第一个供应商开始使用 API Router，支持从预设快速创建。')
+            ? $t('provider.noProvidersHint')
             : $t('provider.noMatchDesc') }}
         </div>
         <button v-if="config.providers.length === 0" class="btn btn--primary btn--sm" @click="emit('add-provider')">
@@ -213,9 +213,9 @@ const statusFilter = ref('all');
 const openMenuId = ref<string | null>(null);
 
 const statusFilterOpts = computed(() => [
-  { value: 'all', label: t('provider.filterAll', { count: props.config.providers.length }, '全部') },
-  { value: 'enabled', label: t('provider.filterEnabled', { count: props.config.providers.filter(p => p.enabled).length }, '启用') },
-  { value: 'disabled', label: t('provider.filterDisabled', { count: props.config.providers.filter(p => !p.enabled).length }, '禁用') },
+  { value: 'all', label: t('provider.filterAll', { count: props.config.providers.length }) },
+  { value: 'enabled', label: t('provider.filterEnabled', { count: props.config.providers.filter(p => p.enabled).length }) },
+  { value: 'disabled', label: t('provider.filterDisabled', { count: props.config.providers.filter(p => !p.enabled).length }) },
 ]);
 
 const healthMap = computed(() => {

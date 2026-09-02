@@ -22,10 +22,11 @@ pub async fn resolve_tier_candidates<'a>(
     allow_degraded: bool,
 ) -> Vec<ResolvedTarget<'a>> {
     let health_snapshot = state.all_health_statuses().await;
-    let health_map: std::collections::HashMap<&str, &crate::state::ProviderHealth> = health_snapshot
-        .iter()
-        .map(|h| (h.provider_id.as_str(), h))
-        .collect();
+    let health_map: std::collections::HashMap<&str, &crate::state::ProviderHealth> =
+        health_snapshot
+            .iter()
+            .map(|h| (h.provider_id.as_str(), h))
+            .collect();
 
     let cb_config = mapping.effective_cb_config(&config.fallback);
 
@@ -46,7 +47,10 @@ pub async fn resolve_tier_candidates<'a>(
             continue;
         }
 
-        let resolved = ResolvedTarget { provider, target: t.clone() };
+        let resolved = ResolvedTarget {
+            provider,
+            target: t.clone(),
+        };
         enabled.push(resolved);
 
         let should_skip = match health_map.get(t.provider_id.as_str()) {
@@ -65,10 +69,15 @@ pub async fn resolve_tier_candidates<'a>(
                     .is_open(&t.provider_id, &cb_config)
                     .await
             }
-        } || state.is_target_on_cooldown(&t.provider_id, &t.model_name).await;
+        } || state
+            .is_target_on_cooldown(&t.provider_id, &t.model_name)
+            .await;
 
         if !should_skip {
-            filtered.push(ResolvedTarget { provider, target: t.clone() });
+            filtered.push(ResolvedTarget {
+                provider,
+                target: t.clone(),
+            });
         }
     }
 

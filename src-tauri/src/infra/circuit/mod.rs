@@ -1,8 +1,8 @@
-pub mod types;
 pub mod breaker;
+pub mod types;
 pub mod window;
 
-pub use crate::infra::circuit::breaker::{CircuitBreaker, is_failure_status};
+pub use crate::infra::circuit::breaker::{is_failure_status, CircuitBreaker};
 pub use crate::infra::circuit::types::BreakerState;
 
 #[cfg(test)]

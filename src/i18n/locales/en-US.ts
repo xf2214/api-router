@@ -62,6 +62,7 @@ export default {
     visible: 'Visible',
     hidden: 'Hidden',
     more: 'More',
+    modelNotFound: 'Model not found: {name}',
   },
   provider: {
     title: 'API Providers',
@@ -86,6 +87,8 @@ export default {
     timeoutSec: 'Timeout',
     proxyDisabled: 'Direct',
     proxySystem: 'System Proxy',
+    proxyDisabledShort: 'Direct',
+    proxySystemShort: 'Proxy',
     checkTime: 'Check: {time}',
     baseInfo: 'Basic Settings',
     advanced: 'Advanced Settings',

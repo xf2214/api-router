@@ -13,6 +13,12 @@
 use crate::metrics::TokenUsage;
 use crate::transform::transform_stream_chunk;
 
+/// 未完成行（pending）的缓冲上限（字节）。
+///
+/// 上游异常输出超长"无换行数据"时，pending 会无限增长；
+/// 超过此上限即强制按整行刷出，为内存占用设置上界。
+const MAX_PENDING_BYTES: usize = 256 * 1024;
+
 /// SSE 行缓冲处理器。
 #[derive(Debug, Default)]
 pub struct SseLineBuffer {
@@ -46,7 +52,16 @@ impl SseLineBuffer {
 
         // 如果缓冲里完全没有换行，等下次再处理
         if !self.pending.contains('\n') {
-            return Vec::new();
+            if self.pending.len() <= MAX_PENDING_BYTES {
+                return Vec::new();
+            }
+            // 超限保护：强制按整行刷出。该行的 transform 可能不完整，
+            // 但保证了内存上界，避免病态上游把代理打爆。
+            let forced = std::mem::take(&mut self.pending);
+            let transformed = transform_stream_chunk(&forced, &self.local_model);
+            let mut out = transformed;
+            out.push('\n');
+            return out.into_bytes();
         }
 
         // 取出 pending 的所有权，避免借用冲突
@@ -181,7 +196,32 @@ mod tests {
 "#;
         let _ = buf.push(chunk);
 
-        let usage = buf.take_usage().expect("usage should be extracted without space");
+        let usage = buf
+            .take_usage()
+            .expect("usage should be extracted without space");
         assert_eq!(usage.total_tokens, 3);
+    }
+
+    #[test]
+    fn oversized_pending_is_force_flushed() {
+        let mut buf = SseLineBuffer::with_local_model("m".to_string());
+
+        // 300 KB 无换行数据，超过 MAX_PENDING_BYTES(256KB)，必须强制刷出
+        let big = vec![b'a'; 300 * 1024];
+        let out = buf.push(&big);
+        assert!(!out.is_empty(), "oversized pending must be force-flushed");
+
+        // 后续数据按新行处理，缓冲被清空
+        let out2 = buf.push(b"tail\n");
+        assert!(!out2.is_empty());
+    }
+
+    #[test]
+    fn normal_partial_lines_still_buffered() {
+        let mut buf = SseLineBuffer::with_local_model("m".to_string());
+
+        // 未超限的无换行 partial 仍应缓冲（返回空）
+        let out = buf.push(b"data: {\"partial\"");
+        assert!(out.is_empty(), "small pending must stay buffered");
     }
 }

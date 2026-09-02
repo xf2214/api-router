@@ -1,17 +1,22 @@
 use std::collections::HashMap;
-use std::time::Duration;
+use std::sync::Arc;
 
 use reqwest::header::AUTHORIZATION;
 use serde::Serialize;
 use serde_json::json;
 use tauri::State;
+use tokio::sync::Semaphore;
 use tracing::info;
 
 use crate::{
+    client::provider_timeout,
     config::{self, ModelInfo, ProviderConfig},
     keyring,
     state::{AppState, ProviderHealth},
 };
+
+/// 并发健康检查探活的最大在途请求数。
+const MAX_CONCURRENT_PROBES: usize = 8;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ModelTestTargetResult {
@@ -36,18 +41,21 @@ pub struct ProviderModelsResult {
 }
 
 #[tauri::command]
-pub async fn delete_provider(state: State<'_, AppState>, provider_id: String) -> Result<(), String> {
+pub async fn delete_provider(
+    state: State<'_, AppState>,
+    provider_id: String,
+) -> Result<(), String> {
     let path = state.inner.config_path.clone();
 
-    {
-        let mut config = state.inner.config.write().await;
-        config.providers.retain(|p| p.id != provider_id);
-        config.models.iter_mut().for_each(|m| {
-            m.targets.retain(|t| t.provider_id != provider_id);
-        });
-        config.models.retain(|m| !m.targets.is_empty());
-        config::save(&config, &path).map_err(|e| e.to_string())?;
-    }
+    // 克隆-修改-替换：磁盘 IO 期间不持有写锁。
+    let mut config_snapshot = state.inner.config.read().await.as_ref().clone();
+    config_snapshot.providers.retain(|p| p.id != provider_id);
+    config_snapshot.models.iter_mut().for_each(|m| {
+        m.targets.retain(|t| t.provider_id != provider_id);
+    });
+    config_snapshot.models.retain(|m| !m.targets.is_empty());
+    config::save(&config_snapshot, &path).map_err(|e| e.to_string())?;
+    *state.inner.config.write().await = Arc::new(config_snapshot);
 
     let _ = keyring::clear_key(&provider_id);
     Ok(())
@@ -64,30 +72,49 @@ pub async fn check_provider_health(
         .ok_or_else(|| format!("Provider {provider_id} not found"))?
         .clone();
 
-    let health = probe_provider(&provider).await;
+    let health = probe_provider(&state, &provider).await;
     state.inner.set_provider_health(health.clone()).await;
     Ok(health)
 }
 
 #[tauri::command]
-pub async fn check_all_providers_health(state: State<'_, AppState>) -> Result<Vec<ProviderHealth>, String> {
+pub async fn check_all_providers_health(
+    state: State<'_, AppState>,
+) -> Result<Vec<ProviderHealth>, String> {
     Ok(check_all_providers_health_internal(&state).await)
 }
 
 pub async fn check_all_providers_health_internal(state: &AppState) -> Vec<ProviderHealth> {
     let config = state.inner.config.read().await.clone();
-    let mut results = Vec::new();
+    let providers: Vec<ProviderConfig> = config
+        .providers
+        .iter()
+        .filter(|p| p.enabled)
+        .cloned()
+        .collect();
 
-    for provider in &config.providers {
-        if !provider.enabled {
-            continue;
-        }
-        let health = probe_provider(provider).await;
-        state.inner.set_provider_health(health.clone()).await;
-        results.push(health);
+    // 并发探活：Semaphore 限制同时在途的探测数，避免大量提供商时打满本机出口。
+    let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_PROBES));
+    let mut tasks = Vec::with_capacity(providers.len());
+    for (idx, provider) in providers.into_iter().enumerate() {
+        let st = state.clone();
+        let sem = semaphore.clone();
+        tasks.push(tokio::spawn(async move {
+            let _permit = sem.acquire_owned().await;
+            let health = probe_provider(&st, &provider).await;
+            st.inner.set_provider_health(health.clone()).await;
+            (idx, health)
+        }));
     }
 
-    results
+    let mut indexed = Vec::with_capacity(tasks.len());
+    for task in tasks {
+        if let Ok(pair) = task.await {
+            indexed.push(pair);
+        }
+    }
+    indexed.sort_by_key(|(idx, _)| *idx);
+    indexed.into_iter().map(|(_, h)| h).collect()
 }
 
 #[tauri::command]
@@ -102,7 +129,7 @@ fn now_timestamp() -> i64 {
         .as_secs() as i64
 }
 
-async fn probe_provider(provider: &ProviderConfig) -> ProviderHealth {
+async fn probe_provider(state: &AppState, provider: &ProviderConfig) -> ProviderHealth {
     let api_key = match keyring::get_key_string(&provider.id) {
         Ok(k) => k,
         Err(e) => {
@@ -117,13 +144,11 @@ async fn probe_provider(provider: &ProviderConfig) -> ProviderHealth {
     };
 
     let upstream_url = build_models_url(&provider.base_url);
-    let timeout = Duration::from_secs(provider.timeout_seconds.clamp(5, 30));
-    let mut builder = reqwest::Client::builder().timeout(timeout);
-    if provider.disable_proxy {
-        builder = builder.no_proxy();
-    }
-    let client = match builder.build() {
-        Ok(c) => c,
+
+    // 复用 ClientRegistry 的连接池（已含代理/keepalive 配置），
+    // 超时通过单请求覆盖为统一的 provider_timeout 策略。
+    let client = match state.inner.clients.get(provider).await {
+        Ok(rt) => rt.http,
         Err(e) => {
             return ProviderHealth {
                 provider_id: provider.id.clone(),
@@ -138,8 +163,12 @@ async fn probe_provider(provider: &ProviderConfig) -> ProviderHealth {
     let start = std::time::Instant::now();
     let response = client
         .get(&upstream_url)
+        .timeout(provider_timeout(provider))
         .header(AUTHORIZATION, format!("Bearer {api_key}"))
-        .header("User-Agent", "api-router/0.1.0")
+        .header(
+            "User-Agent",
+            concat!("api-router/", env!("CARGO_PKG_VERSION")),
+        )
         .header("Accept", "application/json")
         .send()
         .await;
@@ -179,6 +208,7 @@ async fn probe_provider(provider: &ProviderConfig) -> ProviderHealth {
 }
 
 pub(crate) async fn test_target_chat_completion(
+    state: &AppState,
     provider: &ProviderConfig,
     model_name: &str,
 ) -> ModelTestTargetResult {
@@ -196,13 +226,10 @@ pub(crate) async fn test_target_chat_completion(
     };
 
     let upstream_url = build_upstream_url(&provider.base_url, "chat/completions");
-    let timeout = Duration::from_secs(provider.timeout_seconds.clamp(5, 30));
-    let mut builder = reqwest::Client::builder().timeout(timeout);
-    if provider.disable_proxy {
-        builder = builder.no_proxy();
-    }
-    let client = match builder.build() {
-        Ok(c) => c,
+
+    // 复用连接池客户端；超时走统一策略。
+    let client = match state.inner.clients.get(provider).await {
+        Ok(rt) => rt.http,
         Err(e) => {
             return ModelTestTargetResult {
                 provider_id: provider.id.clone(),
@@ -223,6 +250,7 @@ pub(crate) async fn test_target_chat_completion(
     let start = std::time::Instant::now();
     let response = client
         .post(&upstream_url)
+        .timeout(provider_timeout(provider))
         .header(AUTHORIZATION, format!("Bearer {api_key}"))
         .header("Content-Type", "application/json")
         .json(&body)
@@ -267,7 +295,10 @@ pub(crate) fn classify_http_error(status: reqwest::StatusCode, body: &str) -> St
     let lowered = body.to_lowercase();
     if status.as_u16() == 401 || status.as_u16() == 403 {
         "API Key 无效或权限不足".to_string()
-    } else if status.as_u16() == 404 || lowered.contains("model_not_found") || lowered.contains("model does not exist") {
+    } else if status.as_u16() == 404
+        || lowered.contains("model_not_found")
+        || lowered.contains("model does not exist")
+    {
         "模型不存在".to_string()
     } else if status.as_u16() == 429 {
         "请求过于频繁".to_string()
@@ -332,9 +363,10 @@ pub async fn fetch_provider_models(
 
     provider.base_url = normalize_base_url(&provider.base_url);
     let upstream_url = build_models_url(&provider.base_url);
-    let timeout = Duration::from_secs(provider.timeout_seconds.clamp(5, 60));
+    // 注意：provider 可能是尚未保存的草稿配置，不能写入 ClientRegistry 缓存，
+    // 因此这里保留一次性客户端，但超时走统一的 provider_timeout 策略。
     info!("Fetching models from {}", upstream_url);
-    let mut builder = reqwest::Client::builder().timeout(timeout);
+    let mut builder = reqwest::Client::builder().timeout(provider_timeout(&provider));
     if provider.disable_proxy {
         builder = builder.no_proxy();
     }
@@ -345,7 +377,10 @@ pub async fn fetch_provider_models(
     let response = client
         .get(&upstream_url)
         .header(AUTHORIZATION, format!("Bearer {api_key}"))
-        .header("User-Agent", "api-router/0.1.0")
+        .header(
+            "User-Agent",
+            concat!("api-router/", env!("CARGO_PKG_VERSION")),
+        )
         .header("Accept", "application/json")
         .send()
         .await;
@@ -356,21 +391,22 @@ pub async fn fetch_provider_models(
             let body = resp.text().await.unwrap_or_default();
             if !status.is_success() {
                 let summary = body.chars().take(200).collect::<String>();
-                return Err(format!(
-                    "上游返回错误 [{}]: {}",
-                    status.as_u16(),
-                    summary
-                ));
+                return Err(format!("上游返回错误 [{}]: {}", status.as_u16(), summary));
             }
             let (models, info) = parse_models_response(&body)?;
-            Ok(ProviderModelsResult { models, raw_json: body, info })
+            Ok(ProviderModelsResult {
+                models,
+                raw_json: body,
+                info,
+            })
         }
         Err(e) => Err(format!("连接失败: {e}")),
     }
 }
 
 fn parse_models_response(body: &str) -> Result<(Vec<String>, HashMap<String, ModelInfo>), String> {
-    let value: serde_json::Value = serde_json::from_str(body).map_err(|e| format!("解析响应失败: {e}"))?;
+    let value: serde_json::Value =
+        serde_json::from_str(body).map_err(|e| format!("解析响应失败: {e}"))?;
 
     let data = value
         .get("data")
@@ -482,9 +518,12 @@ async fn test_target_with_key(
         "{}/chat/completions",
         provider.base_url.trim_end_matches('/')
     );
-    let timeout = Duration::from_secs(provider.timeout_seconds.clamp(5, 30));
-    let client = reqwest::Client::builder()
-        .timeout(timeout)
+    // 草稿配置：一次性客户端 + 统一超时策略。
+    let mut builder = reqwest::Client::builder().timeout(provider_timeout(provider));
+    if provider.disable_proxy {
+        builder = builder.no_proxy();
+    }
+    let client = builder
         .build()
         .map_err(|e| format!("构建 HTTP 客户端失败: {e}"))?;
 

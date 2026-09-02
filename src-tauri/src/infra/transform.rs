@@ -81,7 +81,10 @@ fn extract_text_from_message(msg: &Value) -> String {
 pub fn transform_request(body: &mut Value, target: &ModelTarget) {
     let upstream_model = &target.model_name;
     if let Some(obj) = body.as_object_mut() {
-        obj.insert("model".to_string(), Value::String(upstream_model.to_string()));
+        obj.insert(
+            "model".to_string(),
+            Value::String(upstream_model.to_string()),
+        );
 
         // 应用 target 级别的参数覆盖
         if let Some(overrides) = &target.override_params {
@@ -138,7 +141,10 @@ pub fn transform_stream_chunk(chunk: &str, local_model: &str) -> String {
     match serde_json::from_str::<Value>(payload) {
         Ok(mut value) => {
             transform_response(&mut value, local_model);
-            format!("{prefix}{}", serde_json::to_string(&value).unwrap_or_else(|_| payload.to_string()))
+            format!(
+                "{prefix}{}",
+                serde_json::to_string(&value).unwrap_or_else(|_| payload.to_string())
+            )
         }
         Err(_) => chunk.to_string(),
     }

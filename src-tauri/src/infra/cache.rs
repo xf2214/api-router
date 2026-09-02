@@ -80,7 +80,13 @@ impl ResponseCache {
             return None;
         }
 
-        Some((axum::http::StatusCode::OK, axum::Json(entry.response_body.clone())).into_response())
+        Some(
+            (
+                axum::http::StatusCode::OK,
+                axum::Json(entry.response_body.clone()),
+            )
+                .into_response(),
+        )
     }
 
     /// 将成功响应存入缓存。
@@ -186,6 +192,9 @@ mod tests {
         let first = serde_json::json!({"model":"gpt-0"});
         assert!(cache.get("chat/completions", &first, false).await.is_none());
         let second = serde_json::json!({"model":"gpt-1"});
-        assert!(cache.get("chat/completions", &second, false).await.is_some());
+        assert!(cache
+            .get("chat/completions", &second, false)
+            .await
+            .is_some());
     }
 }

@@ -65,7 +65,9 @@ impl AppConfig {
             self.providers.iter().map(|p| p.id.clone()).collect();
         for mapping in &self.models {
             if mapping.local_name.is_empty() {
-                return Err(AppError::Config("Model local_name cannot be empty".to_string()));
+                return Err(AppError::Config(
+                    "Model local_name cannot be empty".to_string(),
+                ));
             }
             for target in &mapping.targets {
                 if !provider_ids.contains(&target.provider_id) {
@@ -122,8 +124,7 @@ impl AppConfig {
         use std::collections::HashSet;
 
         // 先快照 group_names，再分阶段做，避免 &self 和 &mut self 重叠借用
-        let group_names: HashSet<String> =
-            self.groups.iter().map(|g| g.name.clone()).collect();
+        let group_names: HashSet<String> = self.groups.iter().map(|g| g.name.clone()).collect();
 
         // 阶段 1：对每个 group 清理成员（通过模型快照验证有效性，避免同时可变借用 groups 和调用 self.find_model）
         let models_snapshot: Vec<(String, String)> = self
@@ -240,7 +241,9 @@ impl Default for ModelMapping {
 
 impl ModelMapping {
     pub fn effective_cb_config(&self, fallback: &FallbackConfig) -> CircuitBreakerConfig {
-        self.cb_config.clone().unwrap_or_else(|| fallback.cb_config.clone())
+        self.cb_config
+            .clone()
+            .unwrap_or_else(|| fallback.cb_config.clone())
     }
 
     pub fn effective_retry(&self, fallback: &FallbackConfig) -> RetryConfig {

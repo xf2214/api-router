@@ -42,7 +42,7 @@
         </button>
       </div>
       <select v-model="selectedStrategy" class="select" style="width: auto; flex: none;">
-        <option value="">{{ $t('routing.allStrategies', '全部策略') }}</option>
+        <option value="">{{ $t('routing.allStrategies') }}</option>
         <option value="priority">{{ $t('routing.strategy.priority') }}</option>
         <option value="round_robin">{{ $t('routing.strategy.roundRobin') }}</option>
         <option value="weighted">{{ $t('routing.strategy.weighted') }}</option>
@@ -95,7 +95,7 @@
                 <circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/>
               </svg>
             </span>
-            {{ $t('routing.targetsSummary', { count: m.targets.length, retries: m.max_retries ?? 0, fallbackStatus: m.fallback_enabled ? $t('routing.fallbackEnabled', '允许回退') : $t('routing.fallbackDisabled', '禁用回退') }, `目标配置（${m.targets.length} 个目标 · 重试 ${m.max_retries ?? 0} 次 · ${m.fallback_enabled ? '允许回退' : '禁用回退'}）`) }}
+            {{ $t('routing.targetsSummary', { count: m.targets.length, retries: m.max_retries ?? 0, fallbackStatus: m.fallback_enabled ? $t('routing.fallbackEnabled') : $t('routing.fallbackDisabled') }) }}
           </div>
 
           <!-- 引用定义差异化卡片 -->
@@ -107,7 +107,7 @@
             </span>
             <div class="col" style="flex:1; min-width:0;">
               <span class="def-card__name">{{ definitionName(m.model_id) }}</span>
-              <span class="def-card__desc">{{ $t('routing.refDefinitionHint', { count: definitionAccessPointCount(m.model_id) }, `来自模型定义：${definitionAccessPointCount(m.model_id)} 个接入点`) }}</span>
+              <span class="def-card__desc">{{ $t('routing.refDefinitionHint', { count: definitionAccessPointCount(m.model_id) }) }}</span>
             </div>
           </div>
 
@@ -116,7 +116,7 @@
             <!-- T1 分组 -->
             <div v-if="targetsByTier(m.targets, 1).length > 0" class="route-targets-tier">
               <div class="route-targets-tier__head route-targets-tier__head--1">
-                T1 {{ $t('routing.tierPrimary', '主路径') }} · {{ targetsByTier(m.targets, 1).length }}
+                T1 {{ $t('routing.tierPrimary') }} · {{ targetsByTier(m.targets, 1).length }}
               </div>
               <div
                 v-for="(t, i) in targetsByTier(m.targets, 1)"
@@ -137,7 +137,7 @@
             <!-- T2 及以上 分组 -->
             <div v-if="targetsByTierGE(m.targets, 2).length > 0" class="route-targets-tier">
               <div class="route-targets-tier__head route-targets-tier__head--2">
-                T2+ {{ $t('routing.tierFallback', '降级路径') }} · {{ targetsByTierGE(m.targets, 2).length }}
+                T2+ {{ $t('routing.tierFallback') }} · {{ targetsByTierGE(m.targets, 2).length }}
               </div>
               <div
                 v-for="(t, i) in targetsByTierGE(m.targets, 2)"
@@ -193,11 +193,11 @@
           </svg>
         </div>
         <div class="empty__title">
-          {{ config.models.length === 0 ? $t('routing.noModelsYet', '还没有模型映射') : $t('routing.noMatch') }}
+          {{ config.models.length === 0 ? $t('routing.noModelsYet') : $t('routing.noMatch') }}
         </div>
         <div class="empty__desc">
           {{ config.models.length === 0
-            ? $t('routing.noModelsHint', '创建第一个模型映射，将本地模型名路由到一个或多个上游目标。')
+            ? $t('routing.noModelsHint')
             : $t('routing.noMatchDesc') }}
         </div>
         <button v-if="config.models.length === 0" class="btn btn--primary btn--sm" @click="emit('add-model')">

@@ -53,3 +53,7 @@ docs/STATUS_AND_HANDOVER.md
 # Misc temporary / environment-specific files
 codex_wfp_filters*.xml
 
+# oh-my-openagent local config (not for public release)
+.omo/
+2026822.json
+

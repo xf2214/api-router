@@ -1,10 +1,16 @@
-import { watch, type Ref, onBeforeUnmount } from 'vue';
+import { watch, type Ref, onBeforeUnmount, onScopeDispose } from 'vue';
+
+export interface UseAutoRefreshOptions {
+  intervalMs?: number;
+}
 
 export function useAutoRefresh(
   activeTab: Ref<string>,
   loadRequestLogs: () => Promise<void>,
   loadProviderStats: () => Promise<void>,
+  options: UseAutoRefreshOptions = {},
 ) {
+  const intervalMs = options.intervalMs ?? 5000;
   let logsTimer: ReturnType<typeof setInterval> | null = null;
 
   function stopLogsAutoRefresh() {
@@ -15,11 +21,24 @@ export function useAutoRefresh(
   }
 
   function startLogsAutoRefresh() {
+    if (typeof document !== 'undefined' && document.hidden) return;
     stopLogsAutoRefresh();
     logsTimer = setInterval(() => {
       loadRequestLogs();
       loadProviderStats();
-    }, 5000);
+    }, intervalMs);
+  }
+
+  function handleVisibilityChange() {
+    if (document.hidden) {
+      stopLogsAutoRefresh();
+    } else if (activeTab.value === 'logs') {
+      startLogsAutoRefresh();
+    }
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', handleVisibilityChange);
   }
 
   const stopWatch = watch(activeTab, async (tab) => {
@@ -32,10 +51,20 @@ export function useAutoRefresh(
     }
   });
 
-  onBeforeUnmount(() => {
+  function cleanup() {
     stopLogsAutoRefresh();
     stopWatch();
-  });
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }
+  }
+
+  onBeforeUnmount(cleanup);
+  try {
+    onScopeDispose(cleanup);
+  } catch {
+    /* ignore if called outside effect scope */
+  }
 
   return { startLogsAutoRefresh, stopLogsAutoRefresh };
 }

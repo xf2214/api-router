@@ -23,10 +23,7 @@ use crate::{
     transform::is_compact_request,
 };
 
-use super::forward::{
-    add_trace_header, check_local_auth, forward_with_retry,
-    started_as_ms,
-};
+use super::forward::{add_trace_header, check_local_auth, forward_with_retry, started_as_ms};
 
 pub async fn health_check() -> impl IntoResponse {
     (StatusCode::OK, "ok")
@@ -143,7 +140,7 @@ async fn handle_completion(
     let local_model = body
         .get("model")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| AppError::Config("Missing 'model' field".to_string()))?
+        .ok_or_else(|| AppError::BadRequest("Missing 'model' field".to_string()))?
         .to_string();
 
     let config = state.inner.config.read().await.clone();
@@ -184,16 +181,35 @@ async fn handle_completion(
         let last_error;
 
         loop {
-            let resolved = match resolve_group_member(&config, &state.inner, group, &excluded_members).await {
-                Ok(r) => r,
-                Err(e) => {
-                    last_error = Some(e);
-                    trace.record("failure", None, None, None, Some(last_error.as_ref().map(|e| e.to_string()).unwrap_or_else(|| "all members exhausted".to_string())));
-                    return Err(last_error.unwrap_or_else(|| AppError::NoAvailableBackend(local_model.clone())));
-                }
-            };
+            let resolved =
+                match resolve_group_member(&config, &state.inner, group, &excluded_members).await {
+                    Ok(r) => r,
+                    Err(e) => {
+                        last_error = Some(e);
+                        trace.record(
+                            "failure",
+                            None,
+                            None,
+                            None,
+                            Some(
+                                last_error
+                                    .as_ref()
+                                    .map(|e| e.to_string())
+                                    .unwrap_or_else(|| "all members exhausted".to_string()),
+                            ),
+                        );
+                        return Err(last_error
+                            .unwrap_or_else(|| AppError::NoAvailableBackend(local_model.clone())));
+                    }
+                };
 
-            trace.record("select_target", None, Some(resolved.provider.id.clone()), Some(resolved.target.model_name.clone()), None);
+            trace.record(
+                "select_target",
+                None,
+                Some(resolved.provider.id.clone()),
+                Some(resolved.target.model_name.clone()),
+                None,
+            );
 
             let member_name = group
                 .members
@@ -217,10 +233,22 @@ async fn handle_completion(
                 Some(name) => name,
                 None => {
                     if group.fallback_enabled {
-                        trace.record("fallback", None, None, None, Some("member not found in config".to_string()));
+                        trace.record(
+                            "fallback",
+                            None,
+                            None,
+                            None,
+                            Some("member not found in config".to_string()),
+                        );
                         continue;
                     } else {
-                        trace.record("failure", None, None, None, Some("member not found in config".to_string()));
+                        trace.record(
+                            "failure",
+                            None,
+                            None,
+                            None,
+                            Some("member not found in config".to_string()),
+                        );
                         return Err(AppError::NoAvailableBackend(local_model.clone()));
                     }
                 }
@@ -228,11 +256,23 @@ async fn handle_completion(
 
             let Some(member_mapping) = config.find_model(&member_name) else {
                 if group.fallback_enabled {
-                    trace.record("fallback", None, None, None, Some(format!("member mapping not found: {}", member_name)));
+                    trace.record(
+                        "fallback",
+                        None,
+                        None,
+                        None,
+                        Some(format!("member mapping not found: {}", member_name)),
+                    );
                     excluded_members.insert(member_name);
                     continue;
                 } else {
-                    trace.record("failure", None, None, None, Some(format!("member mapping not found: {}", member_name)));
+                    trace.record(
+                        "failure",
+                        None,
+                        None,
+                        None,
+                        Some(format!("member mapping not found: {}", member_name)),
+                    );
                     return Err(AppError::NoAvailableBackend(local_model.clone()));
                 }
             };
@@ -267,7 +307,13 @@ async fn handle_completion(
         }
     }
 
-    trace.record("failure", None, None, None, Some(format!("model not found: {}", local_model)));
+    trace.record(
+        "failure",
+        None,
+        None,
+        None,
+        Some(format!("model not found: {}", local_model)),
+    );
     Err(AppError::ModelNotFound(local_model))
 }
 
@@ -289,7 +335,13 @@ async fn try_mapping(
     let targets = effective_targets(config, mapping);
     let tiers = available_tiers(&targets);
     if tiers.is_empty() {
-        trace.record("failure", None, None, None, Some("no available tiers".to_string()));
+        trace.record(
+            "failure",
+            None,
+            None,
+            None,
+            Some("no available tiers".to_string()),
+        );
         return Err(AppError::NoAvailableBackend(local_model.to_string()));
     }
 
@@ -303,15 +355,33 @@ async fn try_mapping(
         let tier_fell_back = fell_back || *tier > tiers[0];
         trace.record("select_tier", Some(*tier), None, None, None);
         loop {
-            let candidates = resolve_tier_candidates(config, &state.inner, mapping, &targets, *tier, &attempted, true).await;
+            let candidates = resolve_tier_candidates(
+                config,
+                &state.inner,
+                mapping,
+                &targets,
+                *tier,
+                &attempted,
+                true,
+            )
+            .await;
             if candidates.is_empty() {
                 break;
             }
 
             let resolved = select_target(mapping.strategy, &candidates, &state.inner).await?;
-            attempted.insert((resolved.provider.id.to_string(), resolved.target.model_name.to_string()));
+            attempted.insert((
+                resolved.provider.id.to_string(),
+                resolved.target.model_name.to_string(),
+            ));
 
-            trace.record("select_target", Some(*tier), Some(resolved.provider.id.to_string()), Some(resolved.target.model_name.to_string()), None);
+            trace.record(
+                "select_target",
+                Some(*tier),
+                Some(resolved.provider.id.to_string()),
+                Some(resolved.target.model_name.to_string()),
+                None,
+            );
 
             let attempt_started = Instant::now();
             match forward_with_retry(
@@ -336,7 +406,13 @@ async fn try_mapping(
                         provider = %resolved.provider.id,
                         "Request succeeded for {}", local_model
                     );
-                    trace.record("success", Some(*tier), Some(resolved.provider.id.to_string()), Some(resolved.target.model_name.to_string()), None);
+                    trace.record(
+                        "success",
+                        Some(*tier),
+                        Some(resolved.provider.id.to_string()),
+                        Some(resolved.target.model_name.to_string()),
+                        None,
+                    );
                     state
                         .inner
                         .metrics
@@ -366,7 +442,13 @@ async fn try_mapping(
                         provider = %resolved.provider.id,
                         "Target failed for {}: {}", local_model, e
                     );
-                    trace.record("failure", Some(*tier), Some(resolved.provider.id.to_string()), Some(resolved.target.model_name.to_string()), Some(e.to_string()));
+                    trace.record(
+                        "failure",
+                        Some(*tier),
+                        Some(resolved.provider.id.to_string()),
+                        Some(resolved.target.model_name.to_string()),
+                        Some(e.to_string()),
+                    );
                     state
                         .inner
                         .metrics
@@ -393,9 +475,14 @@ async fn try_mapping(
         }
 
         if !mapping.fallback_enabled && *tier == tiers[0] {
-            let err_msg = last_error.as_ref().map(|e| e.to_string()).unwrap_or_else(|| "no available backend".to_string());
+            let err_msg = last_error
+                .as_ref()
+                .map(|e| e.to_string())
+                .unwrap_or_else(|| "no available backend".to_string());
             trace.record("failure", Some(*tier), None, None, Some(err_msg));
-            return Err(last_error.unwrap_or_else(|| AppError::NoAvailableBackend(local_model.to_string())));
+            return Err(
+                last_error.unwrap_or_else(|| AppError::NoAvailableBackend(local_model.to_string()))
+            );
         }
     }
 

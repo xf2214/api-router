@@ -90,7 +90,11 @@ impl AppState {
 #[derive(Debug)]
 pub struct AppStateInner {
     /// Current configuration.
-    pub config: RwLock<AppConfig>,
+    ///
+    /// 以 `Arc<AppConfig>` 存储：请求路径只需克隆 Arc（廉价指针拷贝）即可获得
+    /// 一致的配置快照，避免每个请求对整个 AppConfig（providers/models/groups）
+    /// 做深拷贝；写方在保存时构造新的 Arc 整体替换。
+    pub config: RwLock<Arc<AppConfig>>,
     /// Path to the configuration file.
     pub config_path: PathBuf,
     /// Round-robin counter.
@@ -116,7 +120,7 @@ impl AppStateInner {
         let enable_logging = config.enable_logging;
         let cache_config = config.cache.clone();
         Self {
-            config: RwLock::new(config),
+            config: RwLock::new(Arc::new(config)),
             config_path,
             round_robin: AtomicUsize::new(0),
             server_token: Mutex::new(None),
@@ -201,7 +205,8 @@ impl AppStateInner {
 
         if entry.consecutive_failures >= Self::TARGET_COOLDOWN_THRESHOLD {
             entry.cooldown_until = Some(
-                Instant::now() + std::time::Duration::from_secs(Self::TARGET_COOLDOWN_DURATION_SECS),
+                Instant::now()
+                    + std::time::Duration::from_secs(Self::TARGET_COOLDOWN_DURATION_SECS),
             );
         }
     }

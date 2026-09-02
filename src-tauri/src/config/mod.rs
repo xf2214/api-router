@@ -1,27 +1,15 @@
-pub mod types;
 pub mod persist;
+pub mod types;
 
 #[allow(unused_imports)]
 pub use types::{
-    ModelInfo,
-    ProviderConfig,
-    ModelTarget,
-    RoutingStrategy,
-    GroupMember,
-    ModelGroup,
-    CircuitBreakerConfig,
-    RetryConfig,
-    CacheConfig,
-    AccessPoint,
-    ModelDefinition,
-    ModelMapping,
-    FallbackConfig,
-    AppConfig,
-    CacheMode,
+    AccessPoint, AppConfig, CacheConfig, CacheMode, CircuitBreakerConfig, FallbackConfig,
+    GroupMember, ModelDefinition, ModelGroup, ModelInfo, ModelMapping, ModelTarget, ProviderConfig,
+    RetryConfig, RoutingStrategy,
 };
 
 #[allow(unused_imports)]
-pub use persist::{load, save, export_yaml};
+pub use persist::{export_yaml, load, save};
 
 #[cfg(test)]
 mod tests {

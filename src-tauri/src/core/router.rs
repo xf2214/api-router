@@ -1,15 +1,12 @@
 use std::collections::HashSet;
 
-use rand::distributions::WeightedIndex;
-use rand::prelude::*;
-
 use crate::config::{AppConfig, ModelGroup};
 use crate::error::AppError;
 use crate::state::AppStateInner;
 
-use super::routing_types::{effective_targets, ResolvedTarget};
-use super::router_strategies::select_target;
+use super::router_strategies::{pick_candidate_index, select_target};
 use super::router_tiers::{available_tiers, resolve_tier_candidates};
+use super::routing_types::{effective_targets, ResolvedTarget};
 
 pub async fn resolve_primary<'a>(
     config: &'a AppConfig,
@@ -29,7 +26,8 @@ pub async fn resolve_primary<'a>(
     let excluded = HashSet::new();
     let mut tier_errors: Vec<String> = Vec::new();
     for tier in tiers {
-        let candidates = resolve_tier_candidates(config, state, mapping, &targets, tier, &excluded, false).await;
+        let candidates =
+            resolve_tier_candidates(config, state, mapping, &targets, tier, &excluded, false).await;
         if candidates.is_empty() {
             tier_errors.push(format!("tier {}: 无可用候选", tier));
             continue;
@@ -51,75 +49,21 @@ pub async fn resolve_group_member<'a>(
     group: &ModelGroup,
     excluded_members: &HashSet<String>,
 ) -> Result<ResolvedTarget<'a>, AppError> {
-    let (candidates, last_error) = build_group_candidates(config, state, group, excluded_members).await;
+    let (candidates, last_error) =
+        build_group_candidates(config, state, group, excluded_members).await;
     if candidates.is_empty() {
         return Err(last_error.unwrap_or_else(|| AppError::NoAvailableBackend(group.name.clone())));
     }
 
-    match group.strategy {
-        crate::config::RoutingStrategy::Priority => Ok(candidates[0].0.clone()),
-        crate::config::RoutingStrategy::RoundRobin => {
-            let idx = state.next_round_robin() % candidates.len();
-            Ok(candidates[idx].0.clone())
-        }
-        crate::config::RoutingStrategy::Weighted => {
-            let weights: Vec<u32> = candidates.iter().map(|(_, w)| (*w).max(1)).collect();
-            let dist = WeightedIndex::new(&weights)
-                .map_err(|e| AppError::Config(format!("Invalid weights: {e}")))?;
-            let mut rng = thread_rng();
-            Ok(candidates[dist.sample(&mut rng)].0.clone())
-        }
-        crate::config::RoutingStrategy::LeastBusy => {
-            let mut best_idx = 0;
-            let mut best_permits = state
-                .clients
-                .available_permits(&candidates[0].0.provider.id)
-                .await;
-            for (i, (candidate, _)) in candidates.iter().enumerate().skip(1) {
-                let permits = state
-                    .clients
-                    .available_permits(&candidate.provider.id)
-                    .await;
-                if permits > best_permits {
-                    best_permits = permits;
-                    best_idx = i;
-                }
-            }
-            Ok(candidates[best_idx].0.clone())
-        }
-        crate::config::RoutingStrategy::LatencyBased => {
-            let stats = state.metrics.all_stats().await;
-            let mut best_idx = 0;
-            let mut best_latency = f64::MAX;
-
-            for (i, (candidate, _)) in candidates.iter().enumerate() {
-                let provider_id = &candidate.provider.id;
-                let provider_stats: Vec<_> = stats
-                    .iter()
-                    .filter(|s| s.provider_id == *provider_id)
-                    .collect();
-
-                let avg_latency = if provider_stats.is_empty() {
-                    f64::MAX
-                } else {
-                    let total_duration: u64 = provider_stats.iter().map(|s| s.total_duration_ms).sum();
-                    let total_requests: u64 = provider_stats.iter().map(|s| s.total_requests).sum();
-                    if total_requests == 0 {
-                        f64::MAX
-                    } else {
-                        total_duration as f64 / total_requests as f64
-                    }
-                };
-
-                if avg_latency < best_latency {
-                    best_latency = avg_latency;
-                    best_idx = i;
-                }
-            }
-
-            Ok(candidates[best_idx].0.clone())
-        }
-    }
+    // 与 select_target 共享同一份策略实现（router_strategies::pick_candidate_index）；
+    // 差异仅在权重来源：分组成员覆盖的 weight，而非模型目标自身的 weight。
+    let weights: Vec<u32> = candidates.iter().map(|(_, w)| (*w).max(1)).collect();
+    let ids: Vec<&str> = candidates
+        .iter()
+        .map(|(c, _)| c.provider.id.as_str())
+        .collect();
+    let idx = pick_candidate_index(group.strategy, &weights, &ids, state).await?;
+    Ok(candidates[idx].0.clone())
 }
 
 async fn build_group_candidates<'a>(
@@ -149,8 +93,8 @@ async fn build_group_candidates<'a>(
 mod tests {
     use super::*;
     use crate::config::{
-        AccessPoint, AppConfig, GroupMember, ModelDefinition,
-        ModelGroup, ModelMapping, ModelTarget, ProviderConfig, RoutingStrategy,
+        AccessPoint, AppConfig, GroupMember, ModelDefinition, ModelGroup, ModelMapping,
+        ModelTarget, ProviderConfig, RoutingStrategy,
     };
     use crate::state::ProviderHealth;
 
@@ -241,7 +185,8 @@ mod tests {
         let mut excluded = HashSet::new();
         excluded.insert(("agg1".to_string(), "glm-5.2".to_string()));
 
-        let candidates = resolve_tier_candidates(&config, &state, mapping, &targets, 1, &excluded, false).await;
+        let candidates =
+            resolve_tier_candidates(&config, &state, mapping, &targets, 1, &excluded, false).await;
         assert_eq!(candidates.len(), 1);
         assert_eq!(candidates[0].provider.id, "agg2");
     }
@@ -745,7 +690,9 @@ mod tests {
 
         let _idle_runtime = state.clients.get(&config.providers[1]).await.unwrap();
 
-        let resolved = resolve_primary(&config, &state, "test-model").await.unwrap();
+        let resolved = resolve_primary(&config, &state, "test-model")
+            .await
+            .unwrap();
         assert_eq!(resolved.provider.id, "idle");
         assert_eq!(resolved.target.model_name, "idle-model");
     }
@@ -757,7 +704,9 @@ mod tests {
         config.providers[1].concurrency_limit = 0;
         let state = AppStateInner::new(config.clone(), std::path::PathBuf::new());
 
-        let resolved = resolve_primary(&config, &state, "test-model").await.unwrap();
+        let resolved = resolve_primary(&config, &state, "test-model")
+            .await
+            .unwrap();
         assert_eq!(resolved.provider.id, "busy");
     }
 

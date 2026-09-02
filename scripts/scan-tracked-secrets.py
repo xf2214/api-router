@@ -9,7 +9,14 @@ import re
 import subprocess
 import sys
 
-REPO = r"e:\api路由"
+def _resolve_repo_root() -> str:
+    if len(sys.argv) > 1 and sys.argv[1].strip():
+        return os.path.abspath(sys.argv[1])
+    # default: repo root is parent of scripts/ (i.e. script's grandparent)
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+REPO = _resolve_repo_root()
 
 PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\bsk-[A-Za-z0-9]{20,}\b"), "OpenAI sk-*"),

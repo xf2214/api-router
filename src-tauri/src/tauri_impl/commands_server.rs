@@ -2,30 +2,42 @@ use tauri::State;
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
 
-use crate::{
-    config::ModelMapping,
-    server,
-    state::AppState,
-};
+use crate::{config::ModelMapping, server, state::AppState};
 
 use super::commands_config::ServerStatus;
-use super::commands_provider::{test_target_chat_completion, ModelTestResult, ModelTestTargetResult};
+use super::commands_provider::{
+    test_target_chat_completion, ModelTestResult, ModelTestTargetResult,
+};
 
 #[tauri::command]
 pub async fn start_server(state: State<'_, AppState>) -> Result<ServerStatus, String> {
     if state.inner.is_server_running().await {
         let port = state.inner.config.read().await.port;
-        return Ok(ServerStatus { running: true, port });
+        return Ok(ServerStatus {
+            running: true,
+            port,
+        });
     }
 
     let port = state.inner.config.read().await.port;
     let cancel = CancellationToken::new();
     state.inner.set_server_token(cancel.clone()).await;
 
-    match server::start_server(AppState { inner: state.inner.clone() }, port, cancel).await {
+    match server::start_server(
+        AppState {
+            inner: state.inner.clone(),
+        },
+        port,
+        cancel,
+    )
+    .await
+    {
         Ok(addr) => {
             info!("Local server started on {}", addr);
-            Ok(ServerStatus { running: true, port: addr.port() })
+            Ok(ServerStatus {
+                running: true,
+                port: addr.port(),
+            })
         }
         Err(e) => {
             error!("Failed to start server: {}", e);
@@ -38,7 +50,10 @@ pub async fn start_server(state: State<'_, AppState>) -> Result<ServerStatus, St
 pub async fn stop_server(state: State<'_, AppState>) -> Result<ServerStatus, String> {
     state.inner.stop_server().await;
     let port = state.inner.config.read().await.port;
-    Ok(ServerStatus { running: false, port })
+    Ok(ServerStatus {
+        running: false,
+        port,
+    })
 }
 
 #[tauri::command]
@@ -91,7 +106,7 @@ async fn test_model_mapping(
             }
         };
 
-        let result = test_target_chat_completion(&provider, &target.model_name).await;
+        let result = test_target_chat_completion(state, &provider, &target.model_name).await;
         results.push(result);
     }
 

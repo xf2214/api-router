@@ -23,6 +23,9 @@ pub enum AppError {
     #[error("Configuration error: {0}")]
     Config(String),
 
+    #[error("Bad request: {0}")]
+    BadRequest(String),
+
     #[error("Provider not found: {0}")]
     ProviderNotFound(String),
 
@@ -51,18 +54,41 @@ pub enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, code, message) = match &self {
-            AppError::Config(_) => (StatusCode::INTERNAL_SERVER_ERROR, "config_error", self.to_string()),
-            AppError::ProviderNotFound(_) => (StatusCode::NOT_FOUND, "provider_not_found", self.to_string()),
-            AppError::ModelNotFound(_) => (StatusCode::NOT_FOUND, "model_not_found", self.to_string()),
-            AppError::NoAvailableBackend(_) => {
-                (StatusCode::BAD_GATEWAY, "no_available_backend", self.to_string())
+            AppError::Config(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "config_error",
+                self.to_string(),
+            ),
+            AppError::BadRequest(_) => (
+                StatusCode::BAD_REQUEST,
+                "invalid_request_error",
+                self.to_string(),
+            ),
+            AppError::ProviderNotFound(_) => (
+                StatusCode::NOT_FOUND,
+                "provider_not_found",
+                self.to_string(),
+            ),
+            AppError::ModelNotFound(_) => {
+                (StatusCode::NOT_FOUND, "model_not_found", self.to_string())
             }
-            AppError::Upstream { status, message, .. } => (
+            AppError::NoAvailableBackend(_) => (
+                StatusCode::BAD_GATEWAY,
+                "no_available_backend",
+                self.to_string(),
+            ),
+            AppError::Upstream {
+                status, message, ..
+            } => (
                 StatusCode::from_u16(*status).unwrap_or(StatusCode::BAD_GATEWAY),
                 "upstream_error",
                 message.clone(),
             ),
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, "internal_error", self.to_string()),
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal_error",
+                self.to_string(),
+            ),
         };
 
         let body = Json(json!({

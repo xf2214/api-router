@@ -220,7 +220,7 @@ async function onUpdateModelGroup(localName: string, newGroup: string): Promise<
 async function jumpAndEditModel(localName: string): Promise<void> {
   const target = config.value.models.find((m) => m.local_name === localName);
   if (!target) {
-    showMessage(`未找到模型：${localName}`, 'warn');
+    showMessage(t('app.modelNotFound', { name: localName }), 'warn');
     return;
   }
   activeTab.value = 'mappings';
@@ -283,10 +283,18 @@ onMounted(async () => {
   applyTheme();
 
   await loadConfig();
-  await loadGroups();
-  await loadModelDefinitions();
-  await refreshStatus();
-  await loadHealthStatus();
+  const bootResults = await Promise.allSettled([
+    loadGroups(),
+    loadModelDefinitions(),
+    refreshStatus(),
+    loadHealthStatus(),
+  ]);
+  bootResults.forEach((r) => {
+    if (r.status === 'rejected') {
+      console.error('[boot] init failed:', r.reason);
+      showMessage(String((r.reason as Error)?.message ?? r.reason ?? '初始化失败'), 'warn');
+    }
+  });
 
   document.addEventListener('keydown', onGlobalKeydown);
 });

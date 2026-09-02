@@ -35,10 +35,10 @@
           </svg>
         </div>
         <div class="empty__title">
-          {{ $t('routingTree.noGroups', '还没有路由分组') }}
+          {{ $t('routingTree.noGroups') }}
         </div>
         <div class="empty__desc">
-          {{ $t('routingTree.noGroupsDesc', '创建分组后可批量管理路由顺序、权重和降级策略。') }}
+          {{ $t('routingTree.noGroupsDesc') }}
         </div>
         <button class="btn btn--primary btn--sm" @click="startAddGroup">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>
@@ -48,18 +48,18 @@
         <div class="empty-guide" style="width: 100%; max-width: 720px; margin-top: 18px;">
           <div class="empty-step">
             <span class="empty-step__n">1</span>
-            <div class="empty-step__t">{{ $t('routingTree.step1T', '添加供应商') }}</div>
-            <div class="empty-step__d">{{ $t('routingTree.step1D', '在「供应商」页配置上游 API，开启可用性检测。') }}</div>
+            <div class="empty-step__t">{{ $t('routingTree.step1T') }}</div>
+            <div class="empty-step__d">{{ $t('routingTree.step1D') }}</div>
           </div>
           <div class="empty-step">
             <span class="empty-step__n">2</span>
-            <div class="empty-step__t">{{ $t('routingTree.step2T', '创建模型映射') }}</div>
-            <div class="empty-step__d">{{ $t('routingTree.step2D', '在「模型映射」页定义本地模型 → 上游目标。') }}</div>
+            <div class="empty-step__t">{{ $t('routingTree.step2T') }}</div>
+            <div class="empty-step__d">{{ $t('routingTree.step2D') }}</div>
           </div>
           <div class="empty-step">
             <span class="empty-step__n">3</span>
-            <div class="empty-step__t">{{ $t('routingTree.step3T', '组织分组路由') }}</div>
-            <div class="empty-step__d">{{ $t('routingTree.step3D', '创建分组、拖排顺序、配置降级，一键导出模板。') }}</div>
+            <div class="empty-step__t">{{ $t('routingTree.step3T') }}</div>
+            <div class="empty-step__d">{{ $t('routingTree.step3D') }}</div>
           </div>
         </div>
       </div>

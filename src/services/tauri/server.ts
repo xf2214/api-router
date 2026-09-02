@@ -1,22 +1,22 @@
-import { invoke } from '@tauri-apps/api/core';
 import type { ServerStatus, ModelTestResult, ModelMapping } from '../../types';
+import { invokeTyped, COMMANDS } from './client';
 
 export async function startServer(): Promise<ServerStatus> {
-  return invoke<ServerStatus>('start_server');
+  return invokeTyped<ServerStatus>(COMMANDS.server.startServer);
 }
 
 export async function stopServer(): Promise<ServerStatus> {
-  return invoke<ServerStatus>('stop_server');
+  return invokeTyped<ServerStatus>(COMMANDS.server.stopServer);
 }
 
 export async function getServerStatus(): Promise<ServerStatus> {
-  return invoke<ServerStatus>('get_server_status');
+  return invokeTyped<ServerStatus>(COMMANDS.server.getServerStatus);
 }
 
 export async function testModelConnection(localName: string): Promise<ModelTestResult> {
-  return invoke<ModelTestResult>('test_model_connection', { localName });
+  return invokeTyped<ModelTestResult>(COMMANDS.server.testModelConnection, { localName } as Record<string, unknown>);
 }
 
 export async function testModelConfig(model: ModelMapping): Promise<ModelTestResult> {
-  return invoke<ModelTestResult>('test_model_config', { model });
+  return invokeTyped<ModelTestResult>(COMMANDS.server.testModelConfig, { model } as Record<string, unknown>);
 }

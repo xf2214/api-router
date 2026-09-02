@@ -62,6 +62,7 @@ export default {
     visible: '可视',
     hidden: '隐藏',
     more: '更多',
+    modelNotFound: '未找到模型：{name}',
   },
   provider: {
     title: 'API 提供商',
@@ -86,6 +87,8 @@ export default {
     timeoutSec: '超时',
     proxyDisabled: '直连',
     proxySystem: '系统代理',
+    proxyDisabledShort: '直连',
+    proxySystemShort: '代理',
     checkTime: '检查: {time}',
     baseInfo: '基础设置',
     advanced: '高级设置',

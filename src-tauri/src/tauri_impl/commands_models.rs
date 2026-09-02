@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use tauri::State;
 use tracing::info;
 
@@ -7,9 +9,11 @@ use crate::{
 };
 
 #[tauri::command]
-pub async fn get_model_definitions(state: State<'_, AppState>) -> Result<Vec<ModelDefinition>, String> {
-    let config = state.inner.config.read().await.clone();
-    Ok(config.model_definitions)
+pub async fn get_model_definitions(
+    state: State<'_, AppState>,
+) -> Result<Vec<ModelDefinition>, String> {
+    let config = state.inner.config.read().await;
+    Ok(config.model_definitions.clone())
 }
 
 #[tauri::command]
@@ -22,11 +26,15 @@ pub async fn save_model_definition(
     }
 
     let path = state.inner.config_path.clone();
-    let mut config = state.inner.config.write().await;
+    // 克隆-修改-替换：磁盘 IO 期间不持有写锁，读请求不受阻塞。
+    let mut config = state.inner.config.read().await.as_ref().clone();
 
     for ap in &def.access_points {
         if ap.provider_id.trim().is_empty() || config.find_provider(&ap.provider_id).is_none() {
-            return Err(format!("Access point references unknown provider {}", ap.provider_id));
+            return Err(format!(
+                "Access point references unknown provider {}",
+                ap.provider_id
+            ));
         }
         if ap.upstream_model_name.trim().is_empty() {
             return Err("upstream_model_name cannot be empty".to_string());
@@ -40,6 +48,7 @@ pub async fn save_model_definition(
     }
 
     config::save(&config, &path).map_err(|e| e.to_string())?;
+    *state.inner.config.write().await = Arc::new(config);
     info!("Model definitions saved");
     Ok(())
 }
@@ -47,17 +56,18 @@ pub async fn save_model_definition(
 #[tauri::command]
 pub async fn delete_model_definition(state: State<'_, AppState>, id: String) -> Result<(), String> {
     let path = state.inner.config_path.clone();
-    let mut config = state.inner.config.write().await;
+    let mut config = state.inner.config.read().await.as_ref().clone();
     config.model_definitions.retain(|d| d.id != id);
     config::save(&config, &path).map_err(|e| e.to_string())?;
+    *state.inner.config.write().await = Arc::new(config);
     info!("Model definition {} deleted", id);
     Ok(())
 }
 
 #[tauri::command]
 pub async fn get_groups(state: State<'_, AppState>) -> Result<Vec<ModelGroup>, String> {
-    let config = state.inner.config.read().await.clone();
-    Ok(config.groups)
+    let config = state.inner.config.read().await;
+    Ok(config.groups.clone())
 }
 
 #[tauri::command]
@@ -70,7 +80,7 @@ pub async fn save_group(state: State<'_, AppState>, group: ModelGroup) -> Result
     }
 
     let path = state.inner.config_path.clone();
-    let mut config = state.inner.config.write().await;
+    let mut config = state.inner.config.read().await.as_ref().clone();
 
     // 注意：不再校验 members 里每个 model 是否存在 —— 因为 members 现在仅作为
     // 顺序/权重覆盖，成员归属完全由 ModelMapping.group 字段决定。
@@ -88,6 +98,7 @@ pub async fn save_group(state: State<'_, AppState>, group: ModelGroup) -> Result
     config.normalize_all_groups();
 
     config::save(&config, &path).map_err(|e| e.to_string())?;
+    *state.inner.config.write().await = Arc::new(config);
     info!("Group configuration saved");
     Ok(())
 }
@@ -95,11 +106,12 @@ pub async fn save_group(state: State<'_, AppState>, group: ModelGroup) -> Result
 #[tauri::command]
 pub async fn delete_group(state: State<'_, AppState>, name: String) -> Result<(), String> {
     let path = state.inner.config_path.clone();
-    let mut config = state.inner.config.write().await;
+    let mut config = state.inner.config.read().await.as_ref().clone();
     config.groups.retain(|g| g.name != name);
     // 删除后对所有分组和孤立引用做一次清理
     config.normalize_all_groups();
     config::save(&config, &path).map_err(|e| e.to_string())?;
+    *state.inner.config.write().await = Arc::new(config);
     info!("Group {} deleted", name);
     Ok(())
 }

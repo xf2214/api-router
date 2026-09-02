@@ -36,7 +36,15 @@ pub(crate) async fn forward_with_retry(
     started: Instant,
     retry_config: RetryConfig,
     cb_config: CircuitBreakerConfig,
-) -> Result<(Response, Option<u16>, Option<crate::metrics::TokenUsage>, u32), AppError> {
+) -> Result<
+    (
+        Response,
+        Option<u16>,
+        Option<crate::metrics::TokenUsage>,
+        u32,
+    ),
+    AppError,
+> {
     let max_retries = retry_config.attempts.max(1);
 
     let mut attempt: u32 = 0;
@@ -97,7 +105,10 @@ fn is_retryable_app_error(err: &AppError, allowed_codes: &Option<Vec<u16>>) -> b
             if let Some(codes) = allowed_codes {
                 return codes.contains(status);
             }
-            is_retryable_status(reqwest::StatusCode::from_u16(*status).unwrap_or(reqwest::StatusCode::INTERNAL_SERVER_ERROR))
+            is_retryable_status(
+                reqwest::StatusCode::from_u16(*status)
+                    .unwrap_or(reqwest::StatusCode::INTERNAL_SERVER_ERROR),
+            )
         }
         AppError::Request(e) => is_retryable_error(e),
         _ => false,
@@ -212,13 +223,22 @@ pub(crate) async fn forward_request_once(
         let upstream_model_for_map = upstream_model.clone();
         let usage_recorded_map = usage_recorded.clone();
         let stream = upstream.bytes_stream().map(move |result| {
-            let mut buf = buffer_for_map.lock().unwrap();
+            // 锁中毒时恢复内部数据而不是 panic：SSE 流闭包运行在响应流任务中，
+            // 一旦 panic 会终止该连接，且 poisoned Mutex 会让所有后续连接连环 panic。
+            let mut buf = buffer_for_map
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
             match result {
                 Ok(bytes) => {
                     let out = buf.push(&bytes);
                     if let Some(u) = buf.take_usage() {
                         if usage_recorded_map
-                            .compare_exchange(false, true, std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed)
+                            .compare_exchange(
+                                false,
+                                true,
+                                std::sync::atomic::Ordering::Relaxed,
+                                std::sync::atomic::Ordering::Relaxed,
+                            )
                             .is_ok()
                         {
                             let metrics = metrics_handle_for_map.clone();
@@ -244,22 +264,33 @@ pub(crate) async fn forward_request_once(
 
         let stream = stream.chain(futures::stream::once(async move {
             let (rest, usage) = {
-                let mut buf = buffer.lock().unwrap();
+                let mut buf = buffer
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
                 (buf.flush(), buf.take_usage())
             };
 
             let stream_error = errored.load(std::sync::atomic::Ordering::Relaxed);
 
             if stream_error {
-                metrics_handle.convert_to_failure(&provider_id, &upstream_model).await;
+                metrics_handle
+                    .convert_to_failure(&provider_id, &upstream_model)
+                    .await;
             }
             if let Some(u) = usage {
                 if usage_recorded
-                    .compare_exchange(false, true, std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed)
+                    .compare_exchange(
+                        false,
+                        true,
+                        std::sync::atomic::Ordering::Relaxed,
+                        std::sync::atomic::Ordering::Relaxed,
+                    )
                     .is_ok()
                 {
                     let total = u.total_tokens;
-                    metrics_handle.add_usage(&provider_id, &upstream_model, u).await;
+                    metrics_handle
+                        .add_usage(&provider_id, &upstream_model, u)
+                        .await;
                     runtime_for_tpm.record_tokens(total).await;
                 }
             }
@@ -315,7 +346,10 @@ fn build_upstream_url(base_url: &str, endpoint: &str) -> String {
     format!("{}/{}", trimmed.trim_end_matches('/'), endpoint)
 }
 
-pub(crate) async fn check_local_auth(state: &AppState, headers: &HeaderMap) -> Result<(), AppError> {
+pub(crate) async fn check_local_auth(
+    state: &AppState,
+    headers: &HeaderMap,
+) -> Result<(), AppError> {
     let config = state.inner.config.read().await;
     if let Some(expected) = &config.local_api_token {
         let provided = headers
@@ -366,13 +400,15 @@ pub(crate) fn extract_retry_after_ms(err: &AppError) -> Option<u64> {
     }
 }
 
-pub(crate) fn add_trace_header(mut response: Response, trace: &crate::trace::RouteTrace) -> Response {
+pub(crate) fn add_trace_header(
+    mut response: Response,
+    trace: &crate::trace::RouteTrace,
+) -> Response {
     if !trace.decisions.is_empty() {
         if let Ok(val) = HeaderValue::from_str(&trace.to_header_value()) {
-            response.headers_mut().insert(
-                HeaderName::from_static("x-route-trace"),
-                val,
-            );
+            response
+                .headers_mut()
+                .insert(HeaderName::from_static("x-route-trace"), val);
         }
     }
     response

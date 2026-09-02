@@ -23,7 +23,7 @@ Release status legend:  / 发布状态图例：
 ## [Unreleased] / [未发布]
 
 ### Added / 新增
-- Placeholder — to be filled in the next iteration.
+- None.
 
 ### Changed / 变更
 - None.
@@ -32,6 +32,54 @@ Release status legend:  / 发布状态图例：
 - None.
 
 ---
+
+## [0.2.0] - 2026-09-02
+
+> 🪟 **Windows x64 + 🍎 macOS** · Minor Release  
+> 主版本小更新：健壮性增强、CI/Release 流水线完备、路由与监控优化。
+
+### Added / 新增
+
+- **并发健康检查**：全量提供商探活改为并发执行（Semaphore 限流，最多 8 路在途），结果按原顺序返回；大量提供商时启动/刷新显著提速。
+- **前端单元测试体系**：引入 Vitest + @vue/test-utils（`tests/` + `vitest.config.ts`），为关键 composables / 工具函数建立回归防护。
+- **工程规范落地**：新增 ESLint 9 + Prettier 配置（`eslint.config.js` / `.prettierrc.json`）。
+- **日志增强**：新增 `tracing-subscriber` 全局日志初始化，支持 `RUST_LOG` 环境变量控制（默认 `info`）。
+- **应用启动容错**：启动时并行加载分组 / 模型定义 / 服务状态 / 健康检查，单项失败不再阻塞整体初始化，并给出明确提示。
+- **监控自动刷新优化**：页面隐藏（`document.hidden`）时暂停轮询，恢复可见自动续刷；刷新间隔可配置。
+- **国际化补全**：提供商列表新增「直连 / 代理」短标签；模型未找到提示支持 i18n。
+- **GitHub Actions Release 工作流**：推送 `v*` tag 自动构建 Windows（NSIS/MSI）与 macOS 安装包，生成 Draft Release 并上传产物。
+- **CI 全面升级**：Rust fmt + clippy（`-D warnings`）、三平台 `cargo test`、前端 type-check + build、密钥扫描（gitleaks 风格脚本）、Tauri 三平台构建冒烟。
+
+### Changed / 变更
+
+- **路由策略重构**：顺序优先 / 轮询 / 权重 / 最少占用 / 延迟优先统一收敛到共享选路实现（`pick_candidate_index`），分组与模型目标共用同一套逻辑。
+- **健康检查复用连接池**：探活与连通性测试改用 `ClientRegistry` 连接池（尊重系统代理与 keepalive 配置），超时走统一 `provider_timeout` 策略。
+- **User-Agent 版本化**：请求头 `User-Agent` 改为 `api-router/<版本号>`，随 `CARGO_PKG_VERSION` 自动生成。
+- **配置写入优化**：删除 / 保存配置改为「克隆-修改-替换」，磁盘 IO 期间不再持有写锁。
+- **依赖升级**：`rand` 0.8 → 0.9；`tokio` 全量 feature 裁剪为按需开启。
+- **发布体积优化**：Release profile 启用 `lto + opt-level z + strip + codegen-units=1`。
+- **组件重组**：路由树相关组件迁移至 `src/components/routing-tree/`，删除顶层重复的旧组件。
+
+### Fixed / 修复
+
+- 移除冗余的 `once_cell`、`thread_rng` 等过时用法，全面适配 rand 0.9 API。
+- 健康检查 / 测试连通性超时取值统一为 `provider_timeout` 策略（原实现各有独立上限）。
+
+### Security / 安全
+
+- 密钥扫描脚本增强，纳入更多高熵/凭据特征，作为 CI 强制门禁之一。
+
+---
+
+### 下载矩阵 · Download Matrix (v0.2.0)
+
+> 🛠 由 GitHub Actions 在 tag 推送后自动构建，产物见对应 Release 页面。
+
+| Platform / 平台 | Arch / 架构 | Format / 格式 | Status / 状态 |
+|:---------------:|:-----------:|:-------------:|:-------------:|
+| 🪟 **Windows 10/11** | x64 | NSIS exe + WiX MSI | ✅ CI 构建 |
+| 🍎 macOS 12+ | Universal 2 | DMG / .app | ✅ CI 构建 |
+| 🐧 Linux | x64 | deb / rpm / AppImage | 📝 规划中 |
 
 ## [0.1.1] - 2026-08-16
 
@@ -146,6 +194,7 @@ Release status legend:  / 发布状态图例：
 
 ---
 
-[Unreleased]: https://github.com/api-router/api-router/compare/v0.1.1...HEAD
-[0.1.1]: https://github.com/api-router/api-router/releases/tag/v0.1.1
-[0.1.0]: https://github.com/api-router/api-router/releases/tag/v0.1.0
+[Unreleased]: https://github.com/xf2214/api-router/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/xf2214/api-router/releases/tag/v0.2.0
+[0.1.1]: https://github.com/xf2214/api-router/releases/tag/v0.1.1
+[0.1.0]: https://github.com/xf2214/api-router/releases/tag/v0.1.0
