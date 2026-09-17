@@ -4,8 +4,8 @@ import * as tauri from '../services/tauri';
 import { useCsvExport } from '../composables/useCsvExport';
 
 export function createObservabilityStore(
-  t: (key: string, args?: any) => string,
-  showMessageFn: (text: string, type: any) => void,
+  t: (key: string, args?: Record<string, unknown>) => string,
+  showMessageFn: (text: string, type: 'success' | 'error' | 'warn' | 'info') => void,
 ) {
   const state = reactive<{
     requestLogs: RequestLog[];
@@ -13,12 +13,16 @@ export function createObservabilityStore(
     logsLimit: number;
     loadingLogs: boolean;
     loadingStats: boolean;
+    statsError: string | null;
+    lastError: string | null;
   }>({
     requestLogs: [],
     providerStats: [],
     logsLimit: 100,
     loadingLogs: false,
     loadingStats: false,
+    statsError: null,
+    lastError: null,
   });
 
   const { exportLogs: csvExportLogs } = useCsvExport(
@@ -29,10 +33,12 @@ export function createObservabilityStore(
 
   async function loadRequestLogs(): Promise<void> {
     state.loadingLogs = true;
+    state.lastError = null;
     try {
       state.requestLogs = await tauri.getRequestLogs(state.logsLimit);
     } catch (e) {
       console.error('getRequestLogs failed', e);
+      state.lastError = String(e);
     } finally {
       state.loadingLogs = false;
     }
@@ -40,10 +46,12 @@ export function createObservabilityStore(
 
   async function loadProviderStats(): Promise<void> {
     state.loadingStats = true;
+    state.statsError = null;
     try {
       state.providerStats = await tauri.getRequestStats();
     } catch (e) {
       console.error('getRequestStats failed', e);
+      state.statsError = String(e);
     } finally {
       state.loadingStats = false;
     }

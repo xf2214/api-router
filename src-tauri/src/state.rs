@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, RwLock};
@@ -101,6 +101,9 @@ pub struct AppStateInner {
     pub round_robin: AtomicUsize,
     /// Token used to shut down the local server.
     pub server_token: Mutex<Option<CancellationToken>>,
+    pub stop_requested: AtomicBool,
+    pub watchdog_failures: Mutex<u32>,
+    pub watchdog_parked: AtomicBool,
     /// Latest provider health status.
     pub health_status: RwLock<HashMap<String, ProviderHealth>>,
     /// 共享 HTTP 客户端注册表（含 QPS / 并发限流）。
@@ -124,6 +127,9 @@ impl AppStateInner {
             config_path,
             round_robin: AtomicUsize::new(0),
             server_token: Mutex::new(None),
+            stop_requested: AtomicBool::new(false),
+            watchdog_failures: Mutex::new(0),
+            watchdog_parked: AtomicBool::new(false),
             health_status: RwLock::new(HashMap::new()),
             clients: ClientRegistry::new(),
             metrics: MetricsCollector::new(enable_logging),
@@ -239,6 +245,11 @@ impl AppStateInner {
             entry.last_error = None;
         }
     }
+}
+
+/// watchdog 退避：1s 起，2^failures，上限 30s。
+pub fn watchdog_backoff(failures: u32) -> Duration {
+    Duration::from_secs(1u64.saturating_mul(1 << failures.min(5)).min(30))
 }
 
 fn now_secs() -> i64 {
@@ -408,5 +419,19 @@ mod tests {
         }
         // 冷却已过期，应返回 false
         assert!(!state.is_target_on_cooldown("p1", "m1").await);
+    }
+}
+
+#[cfg(test)]
+mod watchdog_tests {
+    use super::watchdog_backoff;
+    use std::time::Duration;
+
+    #[test]
+    fn backoff_grows_and_caps() {
+        assert_eq!(watchdog_backoff(0), Duration::from_secs(1));
+        assert_eq!(watchdog_backoff(1), Duration::from_secs(2));
+        assert_eq!(watchdog_backoff(5), Duration::from_secs(30));
+        assert_eq!(watchdog_backoff(99), Duration::from_secs(30));
     }
 }

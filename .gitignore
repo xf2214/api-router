@@ -49,6 +49,10 @@ Thumbs.db
 # Internal development docs (not for public release)
 docs/internal/
 docs/STATUS_AND_HANDOVER.md
+docs/superpowers/
+
+# Local dev tooling
+.superpowers/
 
 # Misc temporary / environment-specific files
 codex_wfp_filters*.xml

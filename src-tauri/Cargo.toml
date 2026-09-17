@@ -1,6 +1,6 @@
 [package]
 name = "api-router"
-version = "0.2.0"
+version = "0.4.0"
 description = "Unified local API router for LLM subscriptions"
 authors = ["API Router Team"]
 edition = "2021"

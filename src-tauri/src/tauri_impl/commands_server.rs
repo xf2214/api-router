@@ -1,3 +1,5 @@
+use std::sync::atomic::Ordering;
+
 use tauri::State;
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
@@ -34,6 +36,9 @@ pub async fn start_server(state: State<'_, AppState>) -> Result<ServerStatus, St
     {
         Ok(addr) => {
             info!("Local server started on {}", addr);
+            state.inner.stop_requested.store(false, Ordering::SeqCst);
+            *state.inner.watchdog_failures.lock().await = 0;
+            state.inner.watchdog_parked.store(false, Ordering::SeqCst);
             Ok(ServerStatus {
                 running: true,
                 port: addr.port(),
@@ -48,6 +53,7 @@ pub async fn start_server(state: State<'_, AppState>) -> Result<ServerStatus, St
 
 #[tauri::command]
 pub async fn stop_server(state: State<'_, AppState>) -> Result<ServerStatus, String> {
+    state.inner.stop_requested.store(true, Ordering::SeqCst);
     state.inner.stop_server().await;
     let port = state.inner.config.read().await.port;
     Ok(ServerStatus {

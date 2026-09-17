@@ -41,6 +41,15 @@
       <button class="btn btn--soft btn--sm" @click="emit('set-tab', 'settings')">{{ $t('app.goToSettings') }}</button>
     </div>
 
+    <div v-if="lastError" class="info-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+      </svg>
+      <span>{{ lastError }}</span>
+      <div class="spacer" />
+      <button class="btn btn--soft btn--sm" @click="emit('refresh-logs')">{{ $t('app.refresh') }}</button>
+    </div>
+
     <div class="filter-bar">
       <div class="col-search">
         <svg class="col-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
@@ -74,7 +83,7 @@
 
     <div class="card card--flush">
       <div class="table-wrap">
-        <table class="table log-table">
+        <table class="table log-table" :style="loadingLogs ? 'opacity: .6' : undefined">
           <thead>
             <tr>
               <th>{{ $t('logs.time') }}</th>
@@ -127,7 +136,17 @@
               <td class="mono">{{ log.usage ? log.usage.total_tokens.toLocaleString() : '—' }}</td>
               <td class="mono" style="font-size: 11px; color: var(--error)">{{ log.error ?? '—' }}</td>
             </tr>
-            <tr v-if="filteredLogs.length === 0">
+            <tr v-if="loadingLogs">
+              <td colspan="13">
+                <div class="empty" style="padding: 40px 24px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28" class="spin-anim" style="transform-origin: center; color: var(--primary);">
+                    <path d="M21 12a9 9 0 1 1-6.2-8.55"/>
+                  </svg>
+                  <div class="empty__desc">{{ $t('logs.refreshing') }}</div>
+                </div>
+              </td>
+            </tr>
+            <tr v-else-if="filteredLogs.length === 0">
               <td colspan="13">
                 <div class="empty" style="padding: 40px 24px">
                   <div class="empty__icon">
@@ -223,6 +242,7 @@ interface Props {
   requestLogs: RequestLog[];
   loadingLogs: boolean;
   loadingStats: boolean;
+  lastError?: string | null;
   serverUrl: string;
 }
 

@@ -186,7 +186,13 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-if="filteredModels.length === 0" class="empty" style="padding: 56px 24px">
+      <div v-if="loading && config.models.length === 0" class="empty" style="padding: 56px 24px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28" class="spin-anim" style="transform-origin: center; color: var(--primary);">
+          <path d="M21 12a9 9 0 1 1-6.2-8.55"/>
+        </svg>
+        <div class="empty__desc">{{ $t('logs.refreshing') }}</div>
+      </div>
+      <div v-else-if="filteredModels.length === 0" class="empty" style="padding: 56px 24px">
         <div class="empty__icon" style="background: var(--primary-soft); color: var(--primary);">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="30" height="30">
             <circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8.2 7.2 16 16"/><path d="M7.5 8 11 15.5"/><path d="M15.8 7.5 13 15.5"/>
@@ -273,10 +279,12 @@ const { t } = useI18n();
 interface Props {
   config: AppConfig;
   modelDefinitions?: ModelDefinition[];
+  loading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   modelDefinitions: () => [],
+  loading: false,
 });
 const emit = defineEmits<{
   'add-model': [];

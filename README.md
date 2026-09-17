@@ -252,7 +252,7 @@ curl http://127.0.0.1:6123/v1/chat/completions \
 
 <div align="center">
 
-  <img src="https://img.shields.io/badge/Version-v0.2.0-a78bfa?style=for-the-badge&logo=semver&labelColor=0b1020" alt="Current Version"/>
+  <img src="https://img.shields.io/badge/Version-v0.4.0-a78bfa?style=for-the-badge&logo=semver&labelColor=0b1020" alt="Current Version"/>
   <img src="https://img.shields.io/badge/Status-CI%20Auto%20Build-orange?style=for-the-badge&logoColor=white&labelColor=0b1020" alt="Status"/>
   <img src="https://img.shields.io/badge/Platform-Windows%20x64%20%7C%20macOS-f472b6?style=for-the-badge&logoColor=white&labelColor=0b1020" alt="Platform"/>
 
@@ -272,13 +272,13 @@ curl http://127.0.0.1:6123/v1/chat/completions \
 | **最低内存** | 2 GB RAM |
 | **空闲磁盘** | ≥ 200 MB（含安装包 + 本地缓存 + 日志） |
 
-### 📦 发行产物（v0.2.0）
+### 📦 发行产物（v0.4.0）
 
 | 安装包格式 | 推荐场景 | 文件名（示例） | 体积 |
 |:-----------|:---------|:---------------|:----:|
-| **NSIS `.exe`** ✅ | Windows 普通用户首选：双击向导式安装，支持卸载 | `API Router_0.2.0_x64-setup.exe` | ~25 MB |
-| **WiX `.msi`** | Windows 企业部署 / SCCM / 组策略静默安装 | `API Router_0.2.0_x64_en-US.msi` | ~28 MB |
-| **Universal DMG** 🍎 | macOS 12+（Intel / Apple Silicon） | `API Router_0.2.0_aarch64.dmg` 等 | — |
+| **NSIS `.exe`** ✅ | Windows 普通用户首选：双击向导式安装，支持卸载 | `API Router_0.4.0_x64-setup.exe` | ~25 MB |
+| **WiX `.msi`** | Windows 企业部署 / SCCM / 组策略静默安装 | `API Router_0.4.0_x64_en-US.msi` | ~28 MB |
+| **Universal DMG** 🍎 | macOS 12+（Intel / Apple Silicon） | `API Router_0.4.0_aarch64.dmg` 等 | — |
 
 ### 🔗 下载地址
 
@@ -290,8 +290,8 @@ curl http://127.0.0.1:6123/v1/chat/completions \
     <img src="https://img.shields.io/badge/Download-Latest_Release-22d3ee?style=for-the-badge&logo=github&logoColor=white&labelColor=0b1020" alt="Download Latest Release"/>
   </a></kbd>
   &nbsp;
-  <kbd><a href="https://github.com/xf2214/api-router/releases/tag/v0.2.0">
-    <img src="https://img.shields.io/badge/Download-v0.2.0-FFD166?style=for-the-badge&logo=github&logoColor=white&labelColor=0b1020" alt="Download v0.2.0"/>
+  <kbd><a href="https://github.com/xf2214/api-router/releases/tag/v0.4.0">
+    <img src="https://img.shields.io/badge/Download-v0.4.0-FFD166?style=for-the-badge&logo=github&logoColor=white&labelColor=0b1020" alt="Download v0.4.0"/>
   </a></kbd>
   </samp>
   <p><em>若 GitHub 访问缓慢，可使用镜像加速站（如 ghproxy / gh-proxy）。</em></p>

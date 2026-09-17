@@ -252,7 +252,7 @@ curl http://127.0.0.1:6123/v1/chat/completions \
 
 <div align="center">
 
-  <img src="https://img.shields.io/badge/Version-v0.2.0-a78bfa?style=for-the-badge&logo=semver&labelColor=0b1020" alt="Current Version"/>
+  <img src="https://img.shields.io/badge/Version-v0.4.0-a78bfa?style=for-the-badge&logo=semver&labelColor=0b1020" alt="Current Version"/>
   <img src="https://img.shields.io/badge/Status-CI%20Auto%20Build-orange?style=for-the-badge&logoColor=white&labelColor=0b1020" alt="Status"/>
   <img src="https://img.shields.io/badge/Platform-Windows%20x64%20%7C%20macOS-f472b6?style=for-the-badge&logoColor=white&labelColor=0b1020" alt="Platform"/>
 
@@ -272,13 +272,13 @@ curl http://127.0.0.1:6123/v1/chat/completions \
 | **RAM** | ≥ 2 GB |
 | **Free disk space** | ≥ 200 MB (installer + local cache + logs) |
 
-### 📦 Release Artifacts (v0.2.0)
+### 📦 Release Artifacts (v0.4.0)
 
 | Installer format | Recommended for | Example filename | Size |
 |:-----------------|:----------------|:-----------------|:----:|
-| **NSIS `.exe`** ✅ | Windows most users: double-click wizard, supports uninstall | `API Router_0.2.0_x64-setup.exe` | ~25 MB |
-| **WiX `.msi`** | Windows enterprise deploy / SCCM / GPO silent install | `API Router_0.2.0_x64_en-US.msi` | ~28 MB |
-| **Universal DMG** 🍎 | macOS 12+ (Intel / Apple Silicon) | `API Router_0.2.0_aarch64.dmg` etc. | — |
+| **NSIS `.exe`** ✅ | Windows most users: double-click wizard, supports uninstall | `API Router_0.4.0_x64-setup.exe` | ~25 MB |
+| **WiX `.msi`** | Windows enterprise deploy / SCCM / GPO silent install | `API Router_0.4.0_x64_en-US.msi` | ~28 MB |
+| **Universal DMG** 🍎 | macOS 12+ (Intel / Apple Silicon) | `API Router_0.4.0_aarch64.dmg` etc. | — |
 
 ### 🔗 Download Links
 
@@ -290,8 +290,8 @@ Grab the latest release from GitHub Releases:
     <img src="https://img.shields.io/badge/Download-Latest_Release-22d3ee?style=for-the-badge&logo=github&logoColor=white&labelColor=0b1020" alt="Download Latest Release"/>
   </a></kbd>
   &nbsp;
-  <kbd><a href="https://github.com/xf2214/api-router/releases/tag/v0.2.0">
-    <img src="https://img.shields.io/badge/Download-v0.2.0-FFD166?style=for-the-badge&logo=github&logoColor=white&labelColor=0b1020" alt="Download v0.2.0"/>
+  <kbd><a href="https://github.com/xf2214/api-router/releases/tag/v0.4.0">
+    <img src="https://img.shields.io/badge/Download-v0.4.0-FFD166?style=for-the-badge&logo=github&logoColor=white&labelColor=0b1020" alt="Download v0.4.0"/>
   </a></kbd>
   </samp>
   <p><em>Use a GitHub mirror (e.g. ghproxy / gh-proxy) if raw GitHub is slow in your region.</em></p>

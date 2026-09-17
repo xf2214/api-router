@@ -33,6 +33,7 @@ export const COMMANDS = {
     getConfig: 'get_config',
     exportConfig: 'export_config',
     saveConfig: 'save_config',
+    importConfig: 'import_config',
   },
   provider: {
     deleteProvider: 'delete_provider',

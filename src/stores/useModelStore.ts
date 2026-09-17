@@ -3,8 +3,8 @@ import type { ModelMapping, ModelGroup, ModelDefinition, AppConfig } from '../ty
 import * as tauri from '../services/tauri';
 
 export function createModelStore(
-  t: (key: string, args?: any) => string,
-  showMessageFn: (text: string, type: any) => void,
+  t: (key: string, args?: Record<string, unknown>) => string,
+  showMessageFn: (text: string, type: 'success' | 'error' | 'warn' | 'info') => void,
   helpers: {
     configRef: Ref<AppConfig>;
     persistConfig: () => Promise<void>;
@@ -54,7 +54,7 @@ export function createModelStore(
           }
         }
         if (new_group !== '默认') {
-          let gIdx = state.groups.findIndex((g) => g.name === new_group);
+          const gIdx = state.groups.findIndex((g) => g.name === new_group);
           if (gIdx < 0) {
             // 自动创建新分组（默认配置）
             const newG: ModelGroup = {
@@ -206,7 +206,7 @@ export function createModelStore(
 
       // 2) 加入新分组（若非默认且不存在，则创建）
       if (normalizedTarget !== '默认') {
-        let gIdx = state.groups.findIndex((g) => g.name === normalizedTarget);
+        const gIdx = state.groups.findIndex((g) => g.name === normalizedTarget);
         if (gIdx < 0) {
           // 新建分组，默认策略 priority + fallback
           const newMembers = Array.from(affected.entries())

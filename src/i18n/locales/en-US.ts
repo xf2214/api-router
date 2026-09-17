@@ -611,6 +611,8 @@ export default {
     resetConfirm: 'Reset to default settings?',
     configExported: 'Configuration exported',
     exportFailed: 'Export failed: {error}',
+    includeKeys: 'Include keys',
+    importConfig: 'Import config',
   },
   overview: {
     title: 'Overview',

@@ -20,6 +20,9 @@
       :config="config"
       :overall-stats="overallStats"
       :recent-logs="recentLogs"
+      :loading-stats="loadingStats"
+      @show-message="(...args) => emit('show-message', ...args)"
+      @set-tab="emit('set-tab', $event)"
     />
 
     <!-- Quick actions -->
@@ -67,13 +70,17 @@ interface Props {
   serverStatus: ServerStatus;
   healthStatus: ProviderHealth[];
   requestLogs: RequestLog[];
+  loadingStats?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  loadingStats: false,
+});
 const emit = defineEmits<{
   'set-tab': [tab: string];
   'check-all': [];
   'toggle-server': [];
+  'show-message': [text: string, type: 'success' | 'error' | 'warn' | 'info'];
 }>();
 
 const overallStats = computed(() => {

@@ -1,6 +1,8 @@
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use tauri::Manager;
+use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 #[cfg(target_os = "macos")]
@@ -63,6 +65,7 @@ pub fn run() {
             tauri_impl::commands_config::get_config,
             tauri_impl::commands_config::export_config,
             tauri_impl::commands_config::save_config,
+            tauri_impl::commands_config::import_config,
             tauri_impl::commands_provider::delete_provider,
             tauri_impl::commands_models::get_groups,
             tauri_impl::commands_models::save_group,
@@ -124,6 +127,71 @@ pub fn run() {
                             .await;
                     }
                     tokio::time::sleep(Duration::from_secs(interval.max(60))).await;
+                }
+            });
+
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    let state = handle.state::<AppState>();
+                    if state.inner.stop_requested.load(Ordering::SeqCst) {
+                        continue;
+                    }
+                    if state.inner.watchdog_parked.load(Ordering::SeqCst) {
+                        continue;
+                    }
+                    if state.inner.is_server_running().await {
+                        *state.inner.watchdog_failures.lock().await = 0;
+                        continue;
+                    }
+                    let port = state.inner.config.read().await.port;
+                    let probe_ok = matches!(
+                        tokio::time::timeout(
+                            Duration::from_secs(2),
+                            tokio::net::TcpStream::connect(format!("127.0.0.1:{port}")),
+                        )
+                        .await,
+                        Ok(Ok(_))
+                    );
+                    if probe_ok {
+                        *state.inner.watchdog_failures.lock().await = 0;
+                        continue;
+                    }
+                    let failures = {
+                        let mut g = state.inner.watchdog_failures.lock().await;
+                        *g += 1;
+                        *g
+                    };
+                    if failures > 5 {
+                        state.inner.watchdog_parked.store(true, Ordering::SeqCst);
+                        tracing::warn!("watchdog 熔断停试（连续失败 5 次），请手动重启服务");
+                        continue;
+                    }
+                    tracing::warn!("本地服务异常，watchdog 第 {failures} 次重启");
+                    if state.inner.stop_requested.load(Ordering::SeqCst)
+                        || state.inner.watchdog_parked.load(Ordering::SeqCst)
+                        || state.inner.is_server_running().await
+                    {
+                        continue;
+                    }
+                    state.inner.stop_server().await;
+                    let cancel = CancellationToken::new();
+                    state.inner.set_server_token(cancel.clone()).await;
+                    if let Err(e) = crate::server::start_server(
+                        AppState {
+                            inner: state.inner.clone(),
+                        },
+                        port,
+                        cancel,
+                    )
+                    .await
+                    {
+                        tracing::warn!("watchdog 重启失败: {e}");
+                    } else {
+                        *state.inner.watchdog_failures.lock().await = 0;
+                    }
+                    tokio::time::sleep(crate::state::watchdog_backoff(failures)).await;
                 }
             });
             Ok(())

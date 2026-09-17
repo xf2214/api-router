@@ -611,6 +611,8 @@ export default {
     resetConfirm: '确定还原为默认设置？',
     configExported: '配置已导出',
     exportFailed: '导出失败：{error}',
+    includeKeys: '包含密钥',
+    importConfig: '导入配置',
   },
   overview: {
     title: '概览',

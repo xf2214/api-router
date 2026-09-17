@@ -34,15 +34,19 @@
           :server-status="serverStatus"
           :health-status="healthStatus"
           :request-logs="requestLogs"
+          :loading-stats="loadingStats"
           @set-tab="activeTab = $event"
           @check-all="checkAllProviders"
           @toggle-server="toggleServer"
+          @show-message="showMessage"
         />
         <ProvidersPage
           v-if="activeTab === 'providers'"
           :config="config"
           :health-status="healthStatus"
           :checking-all="checkingAll"
+          :loading="loadingStats"
+          :check-error="checkError"
           @add-provider="startAddProvider"
           @edit-provider="editProvider"
           @delete-provider="removeProvider"
@@ -54,6 +58,7 @@
           v-if="activeTab === 'mappings'"
           :config="config"
           :model-definitions="modelDefinitions"
+          :loading="loadingStats"
           @add-model="startAddModel"
           @edit-model="editModel"
           @delete-model="removeModel"
@@ -64,6 +69,7 @@
           :config="config"
           :model-definitions="modelDefinitions"
           :groups="groups"
+          :loading="loadingStats"
           @save-group="saveGroup"
           @delete-group="removeGroup"
           @save-definition="saveModelDefinition"
@@ -78,8 +84,11 @@
           :config="config"
           :provider-stats="providerStats"
           :request-logs="requestLogs"
+          :loading-stats="loadingStats"
+          :stats-error="statsError"
           @set-tab="activeTab = $event"
           @clear-logs="clearLogs"
+          @retry-stats="loadProviderStats"
           @show-message="showMessage"
         />
         <LogsPage
@@ -88,6 +97,7 @@
           :request-logs="requestLogs"
           :loading-logs="loadingLogs"
           :loading-stats="loadingStats"
+          :last-error="lastError"
           :server-url="serverUrl"
           @set-tab="activeTab = $event"
           @refresh-logs="loadRequestLogs(); loadProviderStats()"
@@ -202,7 +212,7 @@ const modelStore = createModelStore(t, showMessage, {
 const observabilityStore = createObservabilityStore(t, showMessage);
 
 const { config, serverStatus, serverUrl, loadConfig, persistConfig, refreshStatus, toggleServer, saveSettings } = appStore;
-const { editingProvider, healthStatus, checkingAll, startAddProvider, editProvider, saveProvider, removeProvider, checkProvider, checkAllProviders, loadHealthStatus } = providerStore;
+const { editingProvider, healthStatus, checkingAll, checkError, startAddProvider, editProvider, saveProvider, removeProvider, checkProvider, checkAllProviders, loadHealthStatus } = providerStore;
 const { editingModel, groups, modelDefinitions, startAddModel, editModel, saveModel, removeModel, saveGroup, removeGroup, moveModelsToGroup, saveModelDefinition, removeModelDefinition, loadGroups, loadModelDefinitions } = modelStore;
 
 /**
@@ -228,7 +238,7 @@ async function jumpAndEditModel(localName: string): Promise<void> {
   editModel(target);
 }
 
-const { requestLogs, providerStats, loadingLogs, loadingStats, loadRequestLogs, loadProviderStats, clearLogs, exportLogs } = observabilityStore;
+const { requestLogs, providerStats, loadingLogs, loadingStats, statsError, lastError, loadRequestLogs, loadProviderStats, clearLogs, exportLogs } = observabilityStore;
 
 const activeTab = ref('overview');
 const modelFormReady = ref(false);
@@ -288,6 +298,8 @@ onMounted(async () => {
     loadModelDefinitions(),
     refreshStatus(),
     loadHealthStatus(),
+    loadRequestLogs(),
+    loadProviderStats(),
   ]);
   bootResults.forEach((r) => {
     if (r.status === 'rejected') {

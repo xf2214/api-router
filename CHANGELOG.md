@@ -20,16 +20,43 @@ Release status legend:  / 发布状态图例：
 
 ---
 
-## [Unreleased] / [未发布]
+## [0.4.0] - 2026-09-12
+
+> 🪟 **Windows x64 + 🍎 macOS** · Minor Release
+> 体验与可靠性打磨版：导入收尾、服务 watchdog、代码健康、六页面三态。
 
 ### Added / 新增
-- None.
+- **服务 watchdog 自动重启**：异常退出指数退避重启（1s→30s），连续 5 次熔断停试并上报；显式停机不触发。
+- **六页面三态统一**：空状态 / 加载态 / 错误重试（Monitoring、Overview、Logs、Providers、Routing、RoutingTree、Settings 动作）。
+- **单测补强**：toast 链 mount 测试、导入两态测试、clipboard 降级分支；vitest ≥35。
 
 ### Changed / 变更
-- None.
+- **导入体验**：成功改走 `getConfig()` 重水合，不再整页 reload（tab 不再重置）；新增 `settings.includeKeys` / `settings.importConfig` 中英 key。
+- **Keyring 测试 hermetic**：`#[cfg(test)]` 内存后端，Linux 无 DBus 也可跑。
+- **Stores 精确化**：4 文件 8 处 `any` 改精确类型。
 
 ### Fixed / 修复
-- None.
+- 复制端点 Toast 链断裂（OverviewPage/App 转发缺失）与 clipboard 降级泄漏（已在开发中修复）。
+- 监控 CTA 硬编码文案改走既有 i18n key。
+
+---
+
+## [0.3.0] - 2026-09-04
+
+> 🪟 **Windows x64 + 🍎 macOS** · Minor Release
+> 小版本更新：配置导入导出与备份、一键复制端点、Mock 上游集成测试、依赖保守更新与门禁清零。
+
+### Added / 新增
+- **配置导入/导出与备份**：导入前自动写时间戳备份；密钥永不进导出文件（掩码 `***`），导入后提示补填。
+- **一键复制本地端点**：Overview 面板端点旁复制按钮（clipboard + 降级），成功/失败 Toast。
+- **Mock 上游集成测试**：零新依赖，axum 自建 mock 上游覆盖流式与非流式转发。
+
+### Changed / 变更
+- 前端依赖 wanted 级更新：plugin-shell 2.3.6、test-utils 2.5.0、typescript-eslint 8.69、vue 3.5.42；Rust 保守 `cargo update`（无 major 跳变）。
+- `exportConfig` 支持 `includeKeys` 参数（含密钥/掩码两种导出）。
+
+### Fixed / 修复
+- 清零 2 个 eslint errors（`prefer-const`）与 `cargo fmt` 1 处 diff；clippy `-D warnings` 全绿。
 
 ---
 
@@ -194,7 +221,9 @@ Release status legend:  / 发布状态图例：
 
 ---
 
-[Unreleased]: https://github.com/xf2214/api-router/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/xf2214/api-router/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/xf2214/api-router/releases/tag/v0.4.0
+[0.3.0]: https://github.com/xf2214/api-router/releases/tag/v0.3.0
 [0.2.0]: https://github.com/xf2214/api-router/releases/tag/v0.2.0
 [0.1.1]: https://github.com/xf2214/api-router/releases/tag/v0.1.1
 [0.1.0]: https://github.com/xf2214/api-router/releases/tag/v0.1.0

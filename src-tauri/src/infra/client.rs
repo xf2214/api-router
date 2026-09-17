@@ -142,7 +142,9 @@ impl ProviderRuntime {
                 let state = state_arc.lock().await;
                 let now = now_ms();
                 if state.last_release_ms > 0 {
-                    state.min_interval_ms.saturating_sub(now.saturating_sub(state.last_release_ms))
+                    state
+                        .min_interval_ms
+                        .saturating_sub(now.saturating_sub(state.last_release_ms))
                 } else {
                     0
                 }

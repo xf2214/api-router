@@ -19,6 +19,15 @@
       </div>
     </header>
 
+    <div v-if="checkError" class="info-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+      </svg>
+      <span>{{ checkError }}</span>
+      <div class="spacer" />
+      <button class="btn btn--soft btn--sm" @click="emit('check-all')">{{ $t('app.refresh') }}</button>
+    </div>
+
     <!-- 筛选栏：状态 Chip 组 + 搜索 -->
     <div class="prov-filter-bar">
       <div class="chip-group">
@@ -154,7 +163,13 @@
         </div>
       </div>
 
-      <div v-if="filteredProviders.length === 0" class="empty" style="padding: 56px 24px">
+      <div v-if="loading && config.providers.length === 0" class="empty" style="padding: 56px 24px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28" class="spin-anim" style="transform-origin: center; color: var(--primary);">
+          <path d="M21 12a9 9 0 1 1-6.2-8.55"/>
+        </svg>
+        <div class="empty__desc">{{ $t('logs.refreshing') }}</div>
+      </div>
+      <div v-else-if="filteredProviders.length === 0" class="empty" style="padding: 56px 24px">
         <div class="empty__icon" style="background: var(--primary-soft); color: var(--primary);">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="30" height="30">
             <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
@@ -196,9 +211,14 @@ interface Props {
   config: AppConfig;
   healthStatus: ProviderHealth[];
   checkingAll: boolean;
+  loading?: boolean;
+  checkError?: string | null;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  loading: false,
+  checkError: null,
+});
 const emit = defineEmits<{
   'add-provider': [];
   'edit-provider': [p: ProviderConfig];

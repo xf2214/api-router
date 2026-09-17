@@ -15,11 +15,14 @@
           <option value="">{{ $t('monitoring.allProviders') }}</option>
           <option v-for="p in config.providers" :key="p.id" :value="p.id">{{ p.name }}</option>
         </select>
-        <button class="btn btn--ghost btn--sm" @click="emit('show-message', t('monitoring.exported'), 'success')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
+        <button class="btn btn--ghost btn--sm" :disabled="loadingStats" @click="emit('show-message', t('monitoring.exported'), 'success')">
+          <svg v-if="!loadingStats" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          {{ $t('monitoring.exportCsv') }}
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" class="spin-anim" style="transform-origin: center;">
+            <path d="M21 12a9 9 0 1 1-6.2-8.55"/>
+          </svg>
+          {{ loadingStats ? $t('logs.refreshing') : $t('monitoring.exportCsv') }}
         </button>
       </div>
     </header>
@@ -167,6 +170,15 @@
       </div>
     </div>
 
+    <div v-if="statsError" class="info-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+      </svg>
+      <span>{{ statsError }}</span>
+      <div class="spacer" />
+      <button class="btn btn--soft btn--sm" @click="emit('retry-stats')">{{ $t('app.refresh') }}</button>
+    </div>
+
     <!-- Aggregated stats table -->
     <div class="card card--flush" style="margin-bottom: 18px">
       <div class="card__head">
@@ -216,10 +228,26 @@
               <td class="mono">{{ formatTokens(s.total_tokens) }}</td>
               <td class="mono muted" style="font-size: 11.5px">{{ s.last_request_at_ms ? formatTime(s.last_request_at_ms) : '—' }}</td>
             </tr>
-            <tr v-if="sortedProviderStats.length === 0">
+            <tr v-if="loadingStats">
               <td colspan="10">
                 <div class="empty" style="padding: 40px 24px">
-                  <div class="empty__desc">{{ $t('monitoring.noStats') }}</div>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28" class="spin-anim" style="transform-origin: center; color: var(--primary);">
+                    <path d="M21 12a9 9 0 1 1-6.2-8.55"/>
+                  </svg>
+                  <div class="empty__desc">{{ $t('logs.refreshing') }}</div>
+                </div>
+              </td>
+            </tr>
+            <tr v-else-if="sortedProviderStats.length === 0">
+              <td colspan="10">
+                <div class="empty" style="padding: 40px 24px">
+                  <div class="empty__icon" style="background: var(--primary-soft); color: var(--primary);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="30" height="30">
+                      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                  </div>
+                  <div class="empty__title">{{ $t('monitoring.noStats') }}</div>
+                  <button class="btn btn--primary btn--sm" @click="emit('set-tab', 'logs')">{{ $t('logs.title') }}</button>
                 </div>
               </td>
             </tr>
@@ -320,12 +348,18 @@ interface Props {
   config: AppConfig;
   providerStats: ProviderStat[];
   requestLogs: RequestLog[];
+  loadingStats?: boolean;
+  statsError?: string | null;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  loadingStats: false,
+  statsError: null,
+});
 const emit = defineEmits<{
   'set-tab': [tab: string];
   'clear-logs': [];
+  'retry-stats': [];
   'show-message': [text: string, type: 'success' | 'error' | 'warn' | 'info'];
 }>();
 

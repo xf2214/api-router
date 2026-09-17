@@ -27,7 +27,13 @@
     <!-- 路由树 -->
     <div v-else style="margin-top:16px; display:flex; flex-direction:column; gap:12px;">
       <!-- 空状态：三步引导 + CTA -->
-      <div v-if="tree.length === 0" class="empty" style="padding: 56px 24px;">
+      <div v-if="loading && tree.length === 0" class="empty" style="padding: 56px 24px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28" class="spin-anim" style="transform-origin: center; color: var(--primary);">
+          <path d="M21 12a9 9 0 1 1-6.2-8.55"/>
+        </svg>
+        <div class="empty__desc">{{ $t('logs.refreshing') }}</div>
+      </div>
+      <div v-else-if="tree.length === 0" class="empty" style="padding: 56px 24px;">
         <div class="empty__icon" style="background: var(--primary-soft); color: var(--primary);">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="30" height="30">
             <path d="M3 6h18M3 12h18M3 18h18"/>
@@ -91,9 +97,12 @@ interface Props {
   config: AppConfig;
   modelDefinitions: ModelDefinition[];
   groups: ModelGroup[];
+  loading?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  loading: false,
+});
 const emit = defineEmits<{
   (e: 'save-group', group: ModelGroup): void;
   (e: 'delete-group', name: string): void;

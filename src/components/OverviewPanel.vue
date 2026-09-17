@@ -16,8 +16,23 @@
         </div>
         <div class="cache-divider" />
         <div class="row" style="gap: 10px;">
-          <span class="endpoint">
+          <span class="endpoint" style="display: inline-flex; align-items: center; gap: 4px;">
             <span class="endpoint__url">{{ serverUrl }}</span>
+            <button type="button" class="btn btn--ghost btn--icon" :title="$t('app.copy')" @click="copyBaseUrl">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                width="16"
+                height="16"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+            </button>
           </span>
         </div>
         <div class="spacer" />
@@ -33,34 +48,47 @@
     <div class="grid-cols cols-4" style="margin-bottom: 18px;">
       <div class="stat">
         <div class="stat__icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <svg v-if="!loadingStats" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" class="spin-anim" style="transform-origin: center;"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>
         </div>
         <div class="stat__label">总请求数</div>
-        <div class="stat__value">{{ overallStats.total.toLocaleString() }}</div>
+        <div class="stat__value" :style="loadingStats ? 'opacity: 0.45;' : ''">{{ overallStats.total.toLocaleString() }}</div>
       </div>
       <div class="stat">
         <div class="stat__icon stat__icon--g">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <svg v-if="!loadingStats" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" class="spin-anim" style="transform-origin: center;"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>
         </div>
         <div class="stat__label">{{ $t('overviewPanel.successRate') }}</div>
-        <div class="stat__value">
+        <div class="stat__value" :style="loadingStats ? 'opacity: 0.45;' : ''">
           {{ overallStats.total > 0 ? overallStats.successRate.toFixed(1) + '%' : '-' }}
         </div>
       </div>
       <div class="stat">
         <div class="stat__icon stat__icon--o">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          <svg v-if="!loadingStats" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" class="spin-anim" style="transform-origin: center;"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>
         </div>
         <div class="stat__label">{{ $t('overviewPanel.failureCount') }}</div>
-        <div class="stat__value">{{ overallStats.failure.toLocaleString() }}</div>
+        <div class="stat__value" :style="loadingStats ? 'opacity: 0.45;' : ''">{{ overallStats.failure.toLocaleString() }}</div>
       </div>
       <div class="stat">
         <div class="stat__icon stat__icon--v">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+          <svg v-if="!loadingStats" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" class="spin-anim" style="transform-origin: center;"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>
         </div>
         <div class="stat__label">{{ $t('overviewPanel.totalTokens') }}</div>
-        <div class="stat__value">{{ formatTokens(overallStats.totalTokens) }}</div>
+        <div class="stat__value" :style="loadingStats ? 'opacity: 0.45;' : ''">{{ formatTokens(overallStats.totalTokens) }}</div>
       </div>
+    </div>
+
+    <div v-if="config.providers.length === 0" class="info-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+      </svg>
+      <span>{{ $t('provider.noProvidersYet') }}</span>
+      <div class="spacer" />
+      <button class="btn btn--soft btn--sm" @click="emit('set-tab', 'providers')">{{ $t('provider.add') }}</button>
     </div>
 
     <!-- Recent logs -->
@@ -96,9 +124,25 @@
               </td>
               <td class="mono">{{ formatDuration(log.duration_ms) }}</td>
             </tr>
-            <tr v-if="recentLogs.length === 0">
+            <tr v-if="loadingStats">
               <td colspan="6">
                 <div class="empty" style="padding: 32px 24px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28" class="spin-anim" style="transform-origin: center; color: var(--primary);">
+                    <path d="M21 12a9 9 0 1 1-6.2-8.55"/>
+                  </svg>
+                  <div class="empty__desc">{{ $t('logs.refreshing') }}</div>
+                </div>
+              </td>
+            </tr>
+            <tr v-else-if="recentLogs.length === 0">
+              <td colspan="6">
+                <div class="empty" style="padding: 32px 24px;">
+                  <div class="empty__icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="30" height="30">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/>
+                    </svg>
+                  </div>
+                  <div class="empty__title">{{ $t('common.noData') }}</div>
                   <div class="empty__desc">{{ $t('overviewPanel.noLogs') }}</div>
                 </div>
               </td>
@@ -112,6 +156,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { AppConfig, ServerStatus, RequestLog } from '../types';
 import {
   formatTime,
@@ -120,6 +165,7 @@ import {
   providerName,
   statusBadgeClass,
 } from '../utils/format';
+import { writeTextWithFallback } from '../utils/clipboard';
 
 
 
@@ -134,11 +180,24 @@ interface Props {
     totalTokens: number;
   };
   recentLogs: RequestLog[];
+  loadingStats?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  loadingStats: false,
+});
+const emit = defineEmits<{
+  'show-message': [text: string, type: 'success' | 'error' | 'warn' | 'info'];
+  'set-tab': [tab: string];
+}>();
+const { t } = useI18n();
 
 const serverUrl = computed(() => `http://127.0.0.1:${props.serverStatus.port}/v1`);
+
+async function copyBaseUrl(): Promise<void> {
+  const ok: boolean = await writeTextWithFallback(serverUrl.value);
+  emit('show-message', ok ? t('app.copied') : t('app.copyFailed'), ok ? 'success' : 'error');
+}
 </script>
 
 <style scoped>

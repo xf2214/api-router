@@ -3,8 +3,8 @@ import type { ProviderConfig, ProviderHealth, AppConfig, ModelMapping } from '..
 import * as tauri from '../services/tauri';
 
 export function createProviderStore(
-  t: (key: string, args?: any) => string,
-  showMessageFn: (text: string, type: any) => void,
+  t: (key: string, args?: Record<string, unknown>) => string,
+  showMessageFn: (text: string, type: 'success' | 'error' | 'warn' | 'info') => void,
   helpers: {
     configRef: Ref<AppConfig>;
     pendingKeysRef: Ref<Record<string, string>>;
@@ -15,10 +15,12 @@ export function createProviderStore(
     editingProvider: ProviderConfig | null | undefined;
     healthStatus: ProviderHealth[];
     checkingAll: boolean;
+    checkError: string | null;
   }>({
     editingProvider: undefined,
     healthStatus: [],
     checkingAll: false,
+    checkError: null,
   });
 
   function startAddProvider(): void {
@@ -117,10 +119,12 @@ export function createProviderStore(
 
   async function checkAllProviders(): Promise<void> {
     state.checkingAll = true;
+    state.checkError = null;
     try {
       const list = await tauri.checkAllProvidersHealth();
       state.healthStatus = list;
     } catch (e) {
+      state.checkError = String(e);
       showMessageFn(t('provider.saveFailed', { error: String(e) }), 'error');
     } finally {
       state.checkingAll = false;

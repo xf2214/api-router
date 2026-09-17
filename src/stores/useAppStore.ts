@@ -3,8 +3,8 @@ import type { AppConfig } from '../types';
 import * as tauri from '../services/tauri';
 
 export function createAppStore(
-  t: (key: string, args?: any) => string,
-  showMessageFn: (text: string, type: any) => void,
+  t: (key: string, args?: Record<string, unknown>) => string,
+  showMessageFn: (text: string, type: 'success' | 'error' | 'warn' | 'info') => void,
 ) {
   const state = reactive<{
     config: AppConfig;

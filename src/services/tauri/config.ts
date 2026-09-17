@@ -5,8 +5,12 @@ export async function getConfig(): Promise<AppConfig> {
   return invokeTyped<AppConfig>(COMMANDS.config.getConfig);
 }
 
-export async function exportConfig(): Promise<string> {
-  return invokeTyped<string>(COMMANDS.config.exportConfig, { includeKeys: true });
+export async function exportConfig(includeKeys = true): Promise<string> {
+  return invokeTyped<string>(COMMANDS.config.exportConfig, { includeKeys } as Record<string, unknown>);
+}
+
+export async function importConfig(payload: string): Promise<{ providers: number; models: number; backup_path: string }> {
+  return invokeTyped(COMMANDS.config.importConfig, { payload } as Record<string, unknown>);
 }
 
 export async function saveConfig(config: AppConfig, keys: Record<string, string>): Promise<void> {

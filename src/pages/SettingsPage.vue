@@ -6,26 +6,53 @@
         <p class="ph__desc">{{ $t('settings.desc') }}</p>
       </div>
       <div class="ph__actions">
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; user-select: none;">
+          <input v-model="includeKeys" type="checkbox" />
+          {{ $t('settings.includeKeys') }}
+        </label>
         <button class="btn btn--ghost btn--sm" @click="resetSettings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
           </svg>
           {{ $t('app.resetDefaults') }}
         </button>
-        <button class="btn btn--ghost btn--sm" @click="exportSettings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
+        <input ref="importFile" type="file" accept="application/json,.json" class="hidden" @change="onImportFile" />
+        <button class="btn btn--ghost btn--sm" :disabled="importing" @click="importFile?.click()">
+          <svg v-if="!importing" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" class="spin-anim" style="transform-origin: center;">
+            <path d="M21 12a9 9 0 1 1-6.2-8.55"/>
+          </svg>
+          {{ $t('settings.importConfig') }}
+        </button>
+        <button class="btn btn--ghost btn--sm" :disabled="exporting" @click="exportSettings">
+          <svg v-if="!exporting" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" class="spin-anim" style="transform-origin: center;">
+            <path d="M21 12a9 9 0 1 1-6.2-8.55"/>
           </svg>
           {{ $t('app.exportConfig') }}
         </button>
-        <button class="btn btn--primary" @click="saveSettings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+        <button class="btn btn--primary" :disabled="saving" @click="saveSettings">
+          <svg v-if="!saving" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" class="spin-anim" style="transform-origin: center;">
+            <path d="M21 12a9 9 0 1 1-6.2-8.55"/>
           </svg>
           {{ $t('app.saveSettings') }}
         </button>
       </div>
     </header>
+
+    <div v-if="importError" class="info-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+      </svg>
+      <span>{{ importError }}</span>
+    </div>
 
     <div style="display: flex; flex-direction: column; gap: 18px">
       <!-- Service -->
@@ -474,7 +501,7 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { exportConfig } from '../services/tauri';
+import { exportConfig, getConfig, importConfig } from '../services/tauri';
 import type { AppConfig, ServerStatus, CircuitBreakerConfig, CacheConfig } from '../types';
 import { setLocale, getLocale } from '../i18n';
 
@@ -573,6 +600,12 @@ const cbFailureCodes = ref<number[]>([500, 502, 503, 504]);
 const cbFailurePercentage = ref(50);
 const cbCodeInput = ref('');
 const cacheStats = ref({ entries: 0, hit_rate: 0, last_cleanup: '—' });
+const importFile = ref<HTMLInputElement | null>(null);
+const includeKeys = ref(true);
+const saving = ref(false);
+const exporting = ref(false);
+const importing = ref(false);
+const importError = ref<string | null>(null);
 
 function syncFromConfig(): void {
   const c = props.config;
@@ -631,7 +664,12 @@ function buildConfig(): AppConfig {
 }
 
 function saveSettings(): void {
-  emit('save-settings', buildConfig());
+  saving.value = true;
+  try {
+    emit('save-settings', buildConfig());
+  } finally {
+    saving.value = false;
+  }
 }
 
 function resetSettings(): void {
@@ -644,22 +682,50 @@ function resetSettings(): void {
 }
 
 async function exportSettings(): Promise<void> {
+  exporting.value = true;
   try {
-    const json = await exportConfig();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const now = new Date();
-    const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
-    a.download = `api-router-config-${ts}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    emit('show-message', t('settings.configExported'), 'success');
-  } catch (error) {
-    emit('show-message', t('settings.exportFailed', { error: String(error) }), 'error');
+    try {
+      const json = await exportConfig(includeKeys.value);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const now = new Date();
+      const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+      a.download = `api-router-config-${ts}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      emit('show-message', t('settings.configExported'), 'success');
+    } catch (error) {
+      emit('show-message', t('settings.exportFailed', { error: String(error) }), 'error');
+    }
+  } finally {
+    exporting.value = false;
+  }
+}
+
+async function onImportFile(e: Event): Promise<void> {
+  importing.value = true;
+  try {
+    const f = (e.target as HTMLInputElement).files?.[0];
+    if (!f) return;
+    try {
+      const text: string = await f.text();
+      const summary = await importConfig(text);
+      const fresh: AppConfig = await getConfig();
+      emit('save-settings', fresh);
+      emit('show-message', `${t('routing.saved')} ${summary.providers}/${summary.models}`, 'success');
+      importError.value = null;
+    } catch (err) {
+      emit('show-message', String(err), 'error');
+      importError.value = String(err).slice(0, 120);
+    } finally {
+      (e.target as HTMLInputElement).value = '';
+    }
+  } finally {
+    importing.value = false;
   }
 }
 
